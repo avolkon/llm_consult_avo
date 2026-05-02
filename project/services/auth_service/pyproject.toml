@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "auth_service"
+version = "0.1.0"
+description = "Authentication service for LLM consultation system"
+authors = ["AVolkon"]
+readme = "README.md"
+packages = [{include = "app"}]
+
+[tool.poetry.scripts]
+auth-service = "app.main:main"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.0"
+uvicorn = "^0.34.0"
+python-dotenv = "^1.0.0"
+pydantic = "^2.10.0"
+pydantic-settings = "^2.6.0"
+sqlalchemy = "^2.0.36"
+asyncpg = "^0.30.0"
+passlib = "^1.7.4"
+bcrypt = "^4.2.0"
+python-jose = "^3.3.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+pytest-asyncio = "^0.24.0"
+httpx = "^0.28.0"
+ruff = "^0.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
