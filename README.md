@@ -1,6 +1,6 @@
 # LLM Consultation System
 
-Система LLM-консультаций с аутентификацией через Telegram-бота.
+Система LLM-консультаций с аутентификацией и чат-ботом в мессенджере **MAX** (не Telegram).
 
 ## Структура проекта
 llm_consult_avo/
@@ -20,7 +20,7 @@ llm_consult_avo/
 │ │ │ ├── .env # Переменные окружения
 │ │ │ └── Dockerfile
 │ │ │
-│ │ └── bot_service/ # Telegram бот (aiogram + Celery)
+│ │ └── bot_service/ # Бот MAX (maxapi + FastAPI webhook / polling, Celery)
 │ │ ├── app/
 │ │ │ ├── main.py # Точка входа
 │ │ │ ├── bot/ # Хендлеры, диспетчер
@@ -47,7 +47,9 @@ llm_consult_avo/
 |---------|----------|
 | make install | Установить зависимости для обоих сервисов |
 | make run-auth | Запустить auth_service (Poetry) |
-| make run-bot  | Запустить bot_service (Poetry) |
+| make run-bot  | Заглушка bot_service (`bot-service`) |
+| make run-max-poll | Long polling MAX (dev) |
+| make run-max-webhook | FastAPI + `/health` + webhook MAX |
 | make lint     | Проверить код через ruff (оба сервиса) |
 | make format   | Отформатировать код через ruff (оба сервиса) |
 | make test     | Запустить pytest (оба сервиса) |
@@ -62,15 +64,16 @@ llm_consult_avo/
 
 ## Запуск
 
-`ash
+```bash
 # Установка зависимостей
 make install
 
 # Запуск сервиса аутентификации
 make run-auth
 
-# Запуск Telegram бота
-make run-bot
+# Long polling MAX (dev) или webhook: make run-max-webhook
+make run-max-poll
+```
 
 Требования
 Python 3.11+

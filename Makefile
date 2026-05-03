@@ -20,6 +20,12 @@ run-auth:
 run-bot:
 	cd project/services/bot_service && poetry run bot-service
 
+run-max-poll:
+	cd project/services/bot_service && poetry run max-poll
+
+run-max-webhook:
+	cd project/services/bot_service && poetry run max-webhook
+
 build-auth:
 	cd project/services/auth_service && poetry build
 

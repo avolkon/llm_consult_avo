@@ -1,0 +1,32 @@
+from functools import lru_cache
+from typing import Literal
+
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    max_bot_token: SecretStr = SecretStr("replace-with-max-bot-token")
+    jwt_secret: str = "replace-with-secret-matching-auth-service"
+
+    redis_url: str = "redis://localhost:6379/0"
+    celery_broker_url: str = "amqp://guest:guest@localhost:5672//"
+
+    api_host: str = "0.0.0.0"
+    api_port: int = 8080
+    webhook_path: str = "/webhook"
+    max_delivery_mode: Literal["webhook", "polling"] = "polling"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()

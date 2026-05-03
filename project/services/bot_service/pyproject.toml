@@ -1,17 +1,18 @@
 [tool.poetry]
 name = "bot_service"
 version = "0.1.0"
-description = "Telegram bot service for LLM consultation system"
+description = "MAX messenger bot and workers for LLM consultation system"
 authors = ["AVolkon"]
 readme = "README.md"
 packages = [{include = "app"}]
 
 [tool.poetry.scripts]
 bot-service = "app.main:main"
+max-webhook = "app.main:run_webhook_server"
+max-poll = "app.poll:run_polling"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-aiogram = "^3.15.0"
 celery = "^5.4.0"
 redis = "^5.2.0"
 httpx = "^0.28.0"
@@ -19,6 +20,9 @@ pydantic = "^2.10.0"
 pydantic-settings = "^2.6.0"
 python-jose = "^3.3.0"
 python-dotenv = "^1.0.0"
+maxapi = {version = "^1.0", extras = ["fastapi"]}
+uvicorn = "^0.46.0"
+fastapi = "^0.136.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
