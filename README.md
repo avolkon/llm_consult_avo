@@ -8,7 +8,7 @@ llm_consult_avo/
 │ ├── services/
 │ │ ├── auth_service/ # FastAPI сервис аутентификации
 │ │ │ ├── app/
-│ │ │ │ ├── main.py # Точка входа (вывод "LLM project is running!")
+│ │ │ │ ├── main.py # FastAPI app, lifespan и /health
 │ │ │ │ ├── api/ # Роутеры FastAPI
 │ │ │ │ ├── core/ # Конфигурация, security, исключения
 │ │ │ │ ├── db/ # SQLAlchemy модели, сессии
@@ -86,5 +86,6 @@ Git
 ✅ Базовый скелет проекта создан
 ✅ Poetry настроен для обоих сервисов
 ✅ Makefile готов к работе
-⏳ Разработка бизнес-логики в процессе
+✅ Эпик 1 (Auth Service): этапы 1-5 реализованы
+⏳ Разработка Bot/Celery эпиков в процессе
 
