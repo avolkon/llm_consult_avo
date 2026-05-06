@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     max_bot_token: SecretStr = SecretStr("replace-with-max-bot-token")
     jwt_secret: str = "replace-with-secret-matching-auth-service"
 
+    openrouter_api_key: SecretStr = SecretStr("")
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_model: str = "stepfun/step-3.5-flash:free"
+    openrouter_site_url: str = "https://example.com"
+    openrouter_app_name: str = "bot-service"
+
     redis_url: str = "redis://localhost:6379/0"
     celery_broker_url: str = "amqp://guest:guest@localhost:5672//"
 

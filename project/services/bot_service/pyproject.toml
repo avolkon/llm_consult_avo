@@ -10,6 +10,7 @@ packages = [{include = "app"}]
 bot-service = "app.main:main"
 max-webhook = "app.main:run_webhook_server"
 max-poll = "app.poll:run_polling"
+celery-llm-worker = "app.tasks.llm_tasks:run_worker_main"
 
 [tool.poetry.dependencies]
 python = "^3.11"
