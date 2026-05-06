@@ -22,6 +22,7 @@ async def _run_polling() -> None:
         )
     bot, dp = build_bot()
     consumer_task = asyncio.create_task(outbox_consumer_loop(bot))
+    log.info("Outbox consumer started (polling mode)")
     try:
         await dp.start_polling(bot)
     finally:
@@ -30,6 +31,7 @@ async def _run_polling() -> None:
             await consumer_task
         except asyncio.CancelledError:
             pass
+        log.info("Outbox consumer stopped (polling mode)")
         await close_redis()
 
 

@@ -18,6 +18,7 @@ from app.core.config import settings
 from app.infra.redis import close_redis
 
 logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
 
 LifespanFn = Callable[[FastAPI], AsyncIterator[None]]
 
@@ -30,6 +31,7 @@ def _webhook_and_consumer_lifespan(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         async with webhook.lifespan(app):
             consumer_task = asyncio.create_task(outbox_consumer_loop(bot))
+            log.info("Outbox consumer started (webhook mode)")
             try:
                 yield
             finally:
@@ -38,6 +40,7 @@ def _webhook_and_consumer_lifespan(
                     await consumer_task
                 except asyncio.CancelledError:
                     pass
+                log.info("Outbox consumer stopped (webhook mode)")
                 await close_redis()
 
     return lifespan
