@@ -8,10 +8,10 @@ import time
 from typing import TYPE_CHECKING, Any
 
 import redis
-from celery import current_task
 
 from app.core.constants import OUTBOX_LIST_KEY, user_chat_key
 from app.infra.celery_app import celery_app
+from app.models.outbox import OutboxItem
 from app.services.openrouter_client import OpenRouterError, call_openrouter_sync
 
 if TYPE_CHECKING:
@@ -43,6 +43,7 @@ def llm_request(
 ) -> None:
     task_id = self.request.id
     r = _get_sync_redis()
+    log.debug("LLM request accepted: sub=%s role=%s task_id=%s", sub, role, task_id)
 
     try:
         response_text = call_openrouter_sync(prompt)
@@ -68,7 +69,8 @@ def llm_request(
         "task_id": task_id,
         "created_at": time.time(),
     }
-    r.rpush(OUTBOX_LIST_KEY, json.dumps(item, ensure_ascii=False))
+    outbox_item = OutboxItem.model_validate(item)
+    r.rpush(OUTBOX_LIST_KEY, outbox_item.to_redis_json())
 
 
 def run_worker_main() -> None:
