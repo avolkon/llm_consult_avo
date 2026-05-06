@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     api_port: int = 8080
     webhook_path: str = "/webhook"
     max_delivery_mode: Literal["webhook", "polling"] = "polling"
+    outbox_dedup_enabled: bool = False
+    outbox_dedup_ttl_seconds: int = 3600
 
 
 @lru_cache

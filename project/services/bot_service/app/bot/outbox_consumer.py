@@ -8,6 +8,7 @@ import logging
 from maxapi import Bot
 
 from app.core.constants import OUTBOX_LIST_KEY
+from app.core.config import settings
 from app.infra.redis import get_redis
 from app.models.outbox import OutboxItem
 
@@ -36,6 +37,16 @@ async def outbox_consumer_loop(bot: Bot) -> None:
         _key, data = result
         try:
             item = OutboxItem.from_redis_json(data)
+            if settings.outbox_dedup_enabled and item.task_id:
+                dedup_key = f"outbox:processed:{item.task_id}"
+                is_new = await redis.set(
+                    dedup_key,
+                    "1",
+                    ex=settings.outbox_dedup_ttl_seconds,
+                    nx=True,
+                )
+                if not is_new:
+                    continue
             chat_id = _parse_chat_id(item.max_user_id)
             await bot.send_message(chat_id=chat_id, text=item.text)
         except Exception:
