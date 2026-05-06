@@ -17,7 +17,7 @@ llm_consult_avo/
 │ │ │ │ └── usecases/ # Бизнес-логика
 │ │ │ ├── tests/ # Тесты
 │ │ │ ├── pyproject.toml # Poetry зависимости
-│ │ │ ├── .env # Переменные окружения
+│ │ │ ├── .env.example # Шаблон переменных окружения
 │ │ │ └── Dockerfile
 │ │ │
 │ │ └── bot_service/ # Бот MAX (maxapi + FastAPI webhook / polling, Celery)
@@ -30,7 +30,7 @@ llm_consult_avo/
 │ │ │ └── tasks/ # Celery задачи
 │ │ ├── tests/
 │ │ ├── pyproject.toml
-│ │ ├── .env
+│ │ ├── .env.example
 │ │ └── Dockerfile
 │ │
 │ ├── docker-compose.yml
@@ -86,6 +86,9 @@ Git
 ✅ Базовый скелет проекта создан
 ✅ Poetry настроен для обоих сервисов
 ✅ Makefile готов к работе
-✅ Эпик 1 (Auth Service): этапы 1-5 реализованы
-⏳ Разработка Bot/Celery эпиков в процессе
+✅ Эпик 1 (Auth Service): реализован
+✅ Эпик 2 (Bot Core): реализован
+✅ Эпик 3 (Celery/OpenRouter/Outbox Producer): реализован
+✅ Эпик 4 (Response Sender): реализован
+⏳ Эпик 5 (документация и инфраструктура): в процессе
 
