@@ -25,6 +25,26 @@ def _max_user_id_from_message(message: Message) -> str:
     return str(cid)
 
 
+async def process_token_command(token: str, max_user_id: str) -> str:
+    payload = decode_and_validate(token)
+    await register_token(await get_redis(), max_user_id, payload)
+    return "Токен принят. Можно отправлять текст для LLM."
+
+
+async def process_user_text(text: str, max_user_id: str) -> str:
+    auth = await get_auth(await get_redis(), max_user_id)
+    if auth is None:
+        return "Сначала авторизуйтесь: /token <JWT от auth_service>"
+
+    sub, role = auth
+    try:
+        llm_request.delay(sub, role, text)
+    except Exception:
+        log.exception("Не удалось отправить задачу в Celery")
+        return "Сервис временно недоступен. Попробуйте позже."
+    return "Запрос отправлен, ответ появится в этом чате."
+
+
 def register_handlers(dp: Dispatcher) -> None:
     @dp.bot_started()
     async def on_bot_started(event: BotStarted) -> None:
@@ -51,18 +71,13 @@ def register_handlers(dp: Dispatcher) -> None:
             )
             return
         token = args[0]
-        try:
-            payload = decode_and_validate(token)
-        except ValueError as exc:
-            await event.message.answer(str(exc))
-            return
         max_user_id = _max_user_id_from_message(event.message)
         try:
-            await register_token(await get_redis(), max_user_id, payload)
+            response = await process_token_command(token, max_user_id)
         except ValueError as exc:
             await event.message.answer(str(exc))
             return
-        await event.message.answer("Токен принят. Можно отправлять текст для LLM.")
+        await event.message.answer(response)
 
     @dp.message_created()
     async def on_message(event: MessageCreated) -> None:
@@ -73,17 +88,5 @@ def register_handlers(dp: Dispatcher) -> None:
             return
 
         max_user_id = _max_user_id_from_message(event.message)
-        auth = await get_auth(await get_redis(), max_user_id)
-        if auth is None:
-            await event.message.answer(
-                "Сначала авторизуйтесь: /token <JWT от auth_service>",
-            )
-            return
-        sub, role = auth
-        try:
-            llm_request.delay(sub, role, text)
-        except Exception:
-            log.exception("Не удалось отправить задачу в Celery")
-            await event.message.answer("Сервис временно недоступен. Попробуйте позже.")
-            return
-        await event.message.answer("Запрос отправлен, ответ появится в этом чате.")
+        response = await process_user_text(text, max_user_id)
+        await event.message.answer(response)
