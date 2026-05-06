@@ -1,0 +1,42 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  auth-service:
+    build:
+      context: ./services/auth_service
+    env_file:
+      - ./.env.example
+    ports:
+      - "8000:8000"
+    command: ["poetry", "run", "auth-service"]
+
+  bot-service:
+    build:
+      context: ./services/bot_service
+    env_file:
+      - ./.env.example
+    depends_on:
+      - redis
+      - rabbitmq
+    ports:
+      - "8080:8080"
+    command: ["poetry", "run", "max-webhook"]
+
+  celery-worker:
+    build:
+      context: ./services/bot_service
+    env_file:
+      - ./.env.example
+    depends_on:
+      - redis
+      - rabbitmq
+    command: ["poetry", "run", "celery-llm-worker"]
