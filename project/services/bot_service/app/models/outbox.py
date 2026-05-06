@@ -13,6 +13,7 @@ class OutboxItem(BaseModel):
     text: str
     task_id: str | None = None
     created_at: float = Field(description="Unix time, seconds")
+    retry_count: int = 0
 
     def to_redis_json(self) -> str:
         return self.model_dump_json()

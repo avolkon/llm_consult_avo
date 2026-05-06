@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     max_delivery_mode: Literal["webhook", "polling"] = "polling"
     outbox_dedup_enabled: bool = False
     outbox_dedup_ttl_seconds: int = 3600
+    outbox_send_max_retries: int = 3
 
 
 @lru_cache

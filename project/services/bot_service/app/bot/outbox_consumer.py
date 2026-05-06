@@ -35,8 +35,14 @@ async def outbox_consumer_loop(bot: Bot) -> None:
             continue
 
         _key, data = result
+        item: OutboxItem | None = None
         try:
             item = OutboxItem.from_redis_json(data)
+        except Exception:
+            log.exception("Отправка сообщения в MAX из outbox: raw=%s", data)
+            continue
+
+        try:
             if settings.outbox_dedup_enabled and item.task_id:
                 dedup_key = f"outbox:processed:{item.task_id}"
                 is_new = await redis.set(
@@ -50,4 +56,7 @@ async def outbox_consumer_loop(bot: Bot) -> None:
             chat_id = _parse_chat_id(item.max_user_id)
             await bot.send_message(chat_id=chat_id, text=item.text)
         except Exception:
-            log.exception("Отправка сообщения в MAX из outbox: raw=%s", data)
+            log.exception("Ошибка доставки в MAX: task_id=%s", item.task_id)
+            if item.retry_count < settings.outbox_send_max_retries:
+                retry_item = item.model_copy(update={"retry_count": item.retry_count + 1})
+                await redis.rpush(OUTBOX_LIST_KEY, retry_item.to_redis_json())
