@@ -1,14 +1,11 @@
-import json
 import logging
-from typing import Any
 
 from maxapi import Dispatcher
 from maxapi.types import BotStarted, Command, Message, MessageCreated
 
-from app.core.constants import max_auth_key
 from app.core.jwt import decode_and_validate
 from app.infra.redis import get_redis
-from app.services.auth_mapping import register_token
+from app.services.auth_mapping import get_auth, register_token
 from app.tasks.llm_tasks import llm_request
 
 log = logging.getLogger(__name__)
@@ -26,15 +23,6 @@ def _max_user_id_from_message(message: Message) -> str:
         msg = "У сообщения нет recipient.chat_id"
         raise ValueError(msg)
     return str(cid)
-
-
-async def _require_auth(max_user_id: str) -> tuple[str, str] | None:
-    redis = await get_redis()
-    raw = await redis.get(max_auth_key(max_user_id))
-    if not raw:
-        return None
-    data: dict[str, Any] = json.loads(raw)
-    return str(data["sub"]), str(data.get("role", "user"))
 
 
 def register_handlers(dp: Dispatcher) -> None:
@@ -85,12 +73,17 @@ def register_handlers(dp: Dispatcher) -> None:
             return
 
         max_user_id = _max_user_id_from_message(event.message)
-        auth = await _require_auth(max_user_id)
+        auth = await get_auth(await get_redis(), max_user_id)
         if auth is None:
             await event.message.answer(
                 "Сначала авторизуйтесь: /token <JWT от auth_service>",
             )
             return
         sub, role = auth
-        llm_request.delay(sub, role, text)
+        try:
+            llm_request.delay(sub, role, text)
+        except Exception:
+            log.exception("Не удалось отправить задачу в Celery")
+            await event.message.answer("Сервис временно недоступен. Попробуйте позже.")
+            return
         await event.message.answer("Запрос отправлен, ответ появится в этом чате.")
