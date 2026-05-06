@@ -36,6 +36,7 @@ async def outbox_consumer_loop(bot: Bot) -> None:
         _key, data = result
         try:
             item = OutboxItem.from_redis_json(data)
-            await bot.send_message(chat_id=_parse_chat_id(item.max_user_id), text=item.text)
+            chat_id = _parse_chat_id(item.max_user_id)
+            await bot.send_message(chat_id=chat_id, text=item.text)
         except Exception:
-            log.exception("Отправка сообщения в MAX из outbox")
+            log.exception("Отправка сообщения в MAX из outbox: raw=%s", data)
