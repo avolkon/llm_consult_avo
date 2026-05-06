@@ -52,7 +52,7 @@ def call_openrouter_sync(prompt: str) -> str:
     }
 
     try:
-        with httpx.Client(timeout=60.0) as client:
+        with httpx.Client(timeout=settings.openrouter_timeout_seconds) as client:
             response = client.post(url, headers=headers, json=payload)
     except httpx.RequestError as exc:
         log.exception("OpenRouter: сетевая ошибка")

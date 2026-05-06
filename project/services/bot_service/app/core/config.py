@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     openrouter_model: str = "stepfun/step-3.5-flash:free"
     openrouter_site_url: str = "https://example.com"
     openrouter_app_name: str = "bot-service"
+    openrouter_timeout_seconds: float = 60.0
 
     redis_url: str = "redis://localhost:6379/0"
     celery_broker_url: str = "amqp://guest:guest@localhost:5672//"
