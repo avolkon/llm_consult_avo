@@ -34,7 +34,7 @@ async def _require_auth(max_user_id: str) -> tuple[str, str] | None:
     if not raw:
         return None
     data: dict[str, Any] = json.loads(raw)
-    return str(data["sub"]), str(data.get("role", "user")))
+    return str(data["sub"]), str(data.get("role", "user"))
 
 
 def register_handlers(dp: Dispatcher) -> None:

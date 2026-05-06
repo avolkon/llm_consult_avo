@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     max_bot_token: SecretStr = SecretStr("replace-with-max-bot-token")
     jwt_secret: str = "replace-with-secret-matching-auth-service"
+    jwt_alg: str = "HS256"
 
     openrouter_api_key: SecretStr = SecretStr("")
     openrouter_base_url: str = "https://openrouter.ai/api/v1"

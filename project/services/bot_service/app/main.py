@@ -74,7 +74,7 @@ def run_webhook_server() -> None:
 
 
 def main() -> None:
-    print("LLM project is running!")
+    run_webhook_server()
 
 
 if __name__ == "__main__":
