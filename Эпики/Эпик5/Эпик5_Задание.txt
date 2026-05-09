@@ -146,7 +146,7 @@ README includes:
 Этап 3 обеспечивает воспроизводимый локальный контур для демонстрации и проверки.
 
 ## Текущее состояние
-**Файл:** `project/docker-compose.yml`, `project/.env.example`, Dockerfile сервисов  
+**Файл:** `project/docker-compose.yml`, `project/.env.auth.example`, `project/.env.bot.example`, Dockerfile сервисов  
 **Функция/класс:** инфраструктурные артефакты запуска  
 **Текущий вывод/поведение:** может не быть единого стандарта запуска  
 **Необходимый вывод/поведение:** подъем необходимых сервисов одной командой
@@ -162,7 +162,7 @@ README includes:
 **Логика работы:**
 1. Добавить сервисы Redis и RabbitMQ.
 2. Подключить Auth Service, Bot Service и Celery worker.
-3. Вынести параметры в `.env.example`.
+3. Вынести параметры в раздельные `.env.auth.example` и `.env.bot.example`.
 
 ### 2. Формат вывода
 ```
@@ -177,7 +177,8 @@ docker compose up -> services healthy -> basic flows available
 
 ## Файлы для изменения
 - `project/docker-compose.yml`
-- `project/.env.example`
+- `project/.env.auth.example`
+- `project/.env.bot.example`
 - `project/services/auth_service/Dockerfile`
 - `project/services/bot_service/Dockerfile`
 - **Не изменять:** бизнес-контракты API.

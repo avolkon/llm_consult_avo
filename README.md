@@ -35,7 +35,8 @@ llm_consult_avo/
 │ │
 │ ├── docker-compose.yml
 │ ├── README.md
-│ └── .env.example
+│ ├── .env.auth.example
+│ └── .env.bot.example
 │
 ├── Makefile
 └── .gitignore
@@ -74,6 +75,10 @@ make run-auth
 # Long polling MAX (dev) или webhook: make run-max-webhook
 make run-max-poll
 ```
+
+Для `docker-compose` используйте отдельные файлы `project/.env.auth.example` и
+`project/.env.bot.example` как шаблоны, а локальные `.env` с реальными секретами
+не добавляйте в git.
 
 Требования
 Python 3.11+

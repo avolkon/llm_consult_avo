@@ -37,7 +37,7 @@
 Артефакты по итогам эпика:
 - `pytest.ini`/`conftest.py` и тестовые наборы;
 - актуальные README;
-- `docker-compose.yml` и `.env.example`;
+- `docker-compose.yml`, `.env.auth.example`, `.env.bot.example`;
 - финальный статус эпиков и приемочные чеклисты.
 
 Definition of Done:

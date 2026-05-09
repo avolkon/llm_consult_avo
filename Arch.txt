@@ -657,14 +657,15 @@ Acceptance Criteria:
 - Поднимается Auth Service.
 - Поднимается Bot Service в выбранном режиме.
 - Celery worker запускается отдельным контейнером.
-- `.env.example` не содержит секретов.
+- `.env.auth.example` и `.env.bot.example` не содержат секретов.
 
 Файлы:
 
 - `project/docker-compose.yml`
 - `project/services/auth_service/Dockerfile`
 - `project/services/bot_service/Dockerfile`
-- `project/.env.example`
+- `project/.env.auth.example`
+- `project/.env.bot.example`
 
 ### Задача 5.4: Makefile и команды разработчика
 
