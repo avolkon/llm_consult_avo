@@ -8,10 +8,15 @@ from fastapi import FastAPI
 
 from app.api.router import build_api_router
 from app.core.config import settings
+from app.db.session import init_db_schema
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    is_local_like = settings.env in {"local", "dev", "test"}
+    is_sqlite = settings.database_url.startswith("sqlite+aiosqlite")
+    if is_local_like and is_sqlite:
+        await init_db_schema()
     yield
 
 

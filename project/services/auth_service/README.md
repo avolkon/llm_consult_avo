@@ -11,6 +11,8 @@ poetry run auth-service
 ```
 
 Сервис поднимается на `0.0.0.0:8000`, Swagger доступен на `/docs`.
+Для `ENV=local/dev/test` и `DATABASE_URL` на SQLite (`sqlite+aiosqlite://...`)
+схема БД создается автоматически при старте.
 
 ## Переменные окружения
 
