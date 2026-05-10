@@ -61,6 +61,9 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
+# Auth Service: локальная SQLite (создаётся при старте / в pytest; не коммитить)
+project/services/auth_service/*.db
+
 # Flask stuff:
 instance/
 .webassets-cache
