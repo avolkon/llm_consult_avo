@@ -46,11 +46,11 @@ def llm_request(
 
     try:
         response_text = call_openrouter_sync(prompt)
-    except OpenRouterError as exc:
-        log.warning("OpenRouter: %s", exc)
-        response_text = f"Не удалось получить ответ от модели: {exc}"
+    except OpenRouterError:
+        log.warning("OpenRouter error for sub=%s task_id=%s", sub, task_id)
+        response_text = "Не удалось получить ответ от модели."
     except Exception:
-        log.exception("Неожиданная ошибка LLM")
+        log.exception("Unexpected LLM error for sub=%s task_id=%s", sub, task_id)
         response_text = "Внутренняя ошибка при обращении к LLM."
 
     max_user_id = r.get(user_chat_key(sub))

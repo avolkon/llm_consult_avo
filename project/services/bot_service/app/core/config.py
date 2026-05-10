@@ -28,6 +28,9 @@ class Settings(BaseSettings):
 
     api_host: str = "0.0.0.0"
     api_port: int = 8080
+
+    # Ограничение размера тела запроса (по заголовку Content-Length), байт.
+    max_request_body_bytes: int = 1_048_576
     webhook_path: str = "/webhook"
     max_delivery_mode: Literal["webhook", "polling"] = "polling"
     outbox_dedup_enabled: bool = False

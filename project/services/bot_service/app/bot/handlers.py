@@ -3,6 +3,10 @@ import logging
 from maxapi import Dispatcher
 from maxapi.types import BotStarted, Command, Message, MessageCreated
 
+from app.core.constants import (
+    MAX_PROMPT_LENGTH,
+    is_prompt_suspicious,
+)
 from app.core.jwt import decode_and_validate
 from app.infra.redis import get_redis
 from app.services.auth_mapping import get_auth, register_token
@@ -36,7 +40,25 @@ async def process_user_text(text: str, max_user_id: str) -> str:
     if auth is None:
         return "Сначала авторизуйтесь: /token <JWT от auth_service>"
 
+    if len(text) > MAX_PROMPT_LENGTH:
+        return f"Сообщение слишком длинное (макс. {MAX_PROMPT_LENGTH} символов)."
+
     sub, role = auth
+
+    # Логируем все промпты для аудита (с sub и chat_id)
+    log.info(
+        "LLM prompt received | sub=%s | max_user_id=%s | length=%d | prompt=%r",
+        sub, max_user_id, len(text), text[:200],
+    )
+
+    # Проверяем на подозрительные (jailbreak) паттерны
+    if is_prompt_suspicious(text):
+        log.warning(
+            "SUSPICIOUS PROMPT BLOCKED | sub=%s | max_user_id=%s | prompt=%r",
+            sub, max_user_id, text[:200],
+        )
+        return "Запрос отклонён: обнаружен потенциально опасный паттерн."
+
     try:
         llm_request.delay(sub, role, text)
     except Exception:

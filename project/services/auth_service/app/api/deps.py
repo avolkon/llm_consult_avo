@@ -7,6 +7,7 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import InvalidTokenError
 from app.core.security import decode_token
 from app.db.session import get_db_session
 from app.repositories.users import UserRepository
@@ -34,4 +35,7 @@ async def get_current_user_id(
     token: Annotated[str, Depends(oauth2_scheme)],
 ) -> int:
     payload = decode_token(token)
-    return int(payload["sub"])
+    try:
+        return int(payload["sub"])
+    except (ValueError, TypeError) as exc:
+        raise InvalidTokenError() from exc

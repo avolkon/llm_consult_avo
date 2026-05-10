@@ -62,3 +62,31 @@ def test_me_with_invalid_token_returns_401(client: TestClient) -> None:
         headers={"Authorization": "Bearer invalid.token.value"},
     )
     assert response.status_code == 401
+
+
+def test_invalid_email_returns_422(client: TestClient) -> None:
+    response = client.post(
+        "/auth/register",
+        json={"email": "not-an-email", "password": "secret123"},
+    )
+    assert response.status_code == 422
+
+
+def test_register_body_over_limit_returns_413(monkeypatch) -> None:
+    monkeypatch.setenv("MAX_REQUEST_BODY_BYTES", "120")
+    from app.core.config import get_settings
+    from app.main import create_app
+
+    get_settings.cache_clear()
+    app = create_app()
+    with TestClient(app) as c:
+        # Тело > 120 байт; пароль в пределах max_length=128 схемы регистрации.
+        payload = b'{"email":"u@example.com","password":"' + b"x" * 85 + b'"}'
+        response = c.post(
+            "/auth/register",
+            content=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        assert response.status_code == 413
+        assert response.json()["detail"] == "Request body too large"
+    get_settings.cache_clear()

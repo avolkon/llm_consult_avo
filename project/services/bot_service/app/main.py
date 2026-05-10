@@ -8,13 +8,14 @@ import logging
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from starlette.responses import JSONResponse
 from maxapi import Bot
 from maxapi.webhook.fastapi import FastAPIMaxWebhook
 
 from app.bot.dispatcher import build_bot
 from app.bot.outbox_consumer import outbox_consumer_loop
-from app.core.config import settings
+from app.core.config import get_settings, settings
 from app.infra.redis import close_redis
 
 logging.basicConfig(level=logging.INFO)
@@ -58,6 +59,18 @@ def create_app(*, with_max_webhook: bool = True) -> FastAPI:
         webhook.setup(app, path=settings.webhook_path)
     else:
         app = FastAPI(title="LLM consult — MAX bot (health-only)")
+
+    @app.middleware("http")
+    async def request_body_size_middleware(request: Request, call_next):
+        if request.method in ("POST", "PUT", "PATCH"):
+            cl = request.headers.get("content-length")
+            if cl is not None:
+                try:
+                    if int(cl) > get_settings().max_request_body_bytes:
+                        return JSONResponse({"detail": "Request body too large"}, status_code=413)
+                except ValueError:
+                    return JSONResponse({"detail": "Invalid Content-Length"}, status_code=400)
+        return await call_next(request)
 
     @app.get("/health")
     async def health() -> dict[str, str]:
