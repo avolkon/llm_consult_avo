@@ -139,7 +139,7 @@ celerybeat.pid
 *.aof
 *.pid
 
-# RabbitMQ (локальные каталоги данных; не затрагивает project/screenshots/RabbitMQ)
+# RabbitMQ (локальные каталоги данных; не затрагивает screenshots/RabbitMQ)
 mnesia/
 rabbitmq-data/
 /rabbitmq/
