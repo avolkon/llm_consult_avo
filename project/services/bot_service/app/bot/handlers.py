@@ -2,6 +2,7 @@ import logging
 
 from maxapi import Dispatcher
 from maxapi.types import BotStarted, Command, Message, MessageCreated
+from redis.asyncio import Redis
 
 from app.core.constants import (
     MAX_PROMPT_LENGTH,
@@ -29,14 +30,14 @@ def _max_user_id_from_message(message: Message) -> str:
     return str(cid)
 
 
-async def process_token_command(token: str, max_user_id: str) -> str:
+async def process_token_command(redis: Redis, token: str, max_user_id: str) -> str:
     payload = decode_and_validate(token)
-    await register_token(await get_redis(), max_user_id, payload)
+    await register_token(redis, max_user_id, payload)
     return "Токен принят. Можно отправлять текст для LLM."
 
 
-async def process_user_text(text: str, max_user_id: str) -> str:
-    auth = await get_auth(await get_redis(), max_user_id)
+async def process_user_text(redis: Redis, text: str, max_user_id: str) -> str:
+    auth = await get_auth(redis, max_user_id)
     if auth is None:
         return "Сначала авторизуйтесь: /token <JWT от auth_service>"
 
@@ -94,8 +95,9 @@ def register_handlers(dp: Dispatcher) -> None:
             return
         token = args[0]
         max_user_id = _max_user_id_from_message(event.message)
+        redis = await get_redis()
         try:
-            response = await process_token_command(token, max_user_id)
+            response = await process_token_command(redis, token, max_user_id)
         except ValueError as exc:
             await event.message.answer(str(exc))
             return
@@ -110,5 +112,6 @@ def register_handlers(dp: Dispatcher) -> None:
             return
 
         max_user_id = _max_user_id_from_message(event.message)
-        response = await process_user_text(text, max_user_id)
+        redis = await get_redis()
+        response = await process_user_text(redis, text, max_user_id)
         await event.message.answer(response)
