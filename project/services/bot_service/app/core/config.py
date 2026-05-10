@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,7 +13,11 @@ class Settings(BaseSettings):
     )
 
     max_bot_token: SecretStr = SecretStr("replace-with-max-bot-token")
-    jwt_secret: str = "replace-with-secret-matching-auth-service"
+    jwt_secret: str = Field(
+        ...,
+        min_length=32,
+        description="Тот же секрет, что в auth_service (не плейсхолдер из репозитория)",
+    )
     jwt_alg: str = "HS256"
 
     openrouter_api_key: SecretStr = SecretStr("")
@@ -36,6 +40,14 @@ class Settings(BaseSettings):
     outbox_dedup_enabled: bool = False
     outbox_dedup_ttl_seconds: int = 3600
     outbox_send_max_retries: int = 3
+
+    @field_validator("jwt_secret")
+    @classmethod
+    def validate_jwt_secret(cls, v: str) -> str:
+        if v in {"change_me_super_secret", "replace-with-secret-matching-auth-service", ""}:
+            msg = "JWT_SECRET must be set to a strong secret (not a placeholder)"
+            raise ValueError(msg)
+        return v
 
 
 @lru_cache
