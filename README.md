@@ -80,6 +80,33 @@ make run-max-poll
 `project/.env.bot.example` как шаблоны, а локальные `.env` с реальными секретами
 не добавляйте в git.
 
+## Пользовательский flow проверки
+
+Типовой сценарий для проверки системы:
+
+1. Пользователь регистрируется в `auth_service` через `POST /auth/register`.
+2. Пользователь выполняет логин через `POST /auth/login` и получает JWT.
+3. Пользователь отправляет JWT боту в MAX командой `/token <JWT>`.
+4. Bot Service валидирует JWT и сохраняет производное auth-состояние в Redis:
+   `max_auth:<max_user_id>` и `user_chat:<sub>`.
+5. Пользователь отправляет обычный текстовый вопрос в MAX.
+6. Bot Service отправляет задачу `llm_request(sub, role, prompt)` в Celery/RabbitMQ.
+7. Celery worker вызывает OpenRouter и кладёт ответ в Redis LIST `max:outbox`.
+8. Outbox consumer внутри Bot Service читает `max:outbox` через `BLPOP` и отправляет ответ пользователю в MAX.
+
+В текущей учебной версии пользователь вручную передаёт JWT через `/token`.
+User-friendly авторизация без ручного JWT вынесена в backlog как первая задача после экзамена.
+
+## Режимы MAX
+
+Bot Service поддерживает два режима получения событий MAX:
+
+- `polling` — удобен для локальной разработки, запускается через `make run-max-poll`.
+- `webhook` — используется для Docker/production-сценария, запускается через `make run-max-webhook` или `project/docker-compose.yml`.
+
+Polling и webhook нельзя использовать одновременно для одного MAX-бота.
+Перед запуском polling webhook должен быть отключён на стороне MAX, а для webhook нужен публичный HTTPS URL, зарегистрированный в настройках бота.
+
 Требования
 Python 3.11+
 
