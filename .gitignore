@@ -217,8 +217,5 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Local project docs workspace
-/Разработка/
-
 # Local Cursor rules and workspace state
 /.cursor/
