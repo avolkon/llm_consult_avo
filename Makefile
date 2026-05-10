@@ -32,6 +32,10 @@ build-auth:
 build-bot:
 	cd project/services/bot_service && poetry build
 
+publish:
+	cd project/services/auth_service && poetry publish --dry-run
+	cd project/services/bot_service && poetry publish --dry-run
+
 lint-auth:
 	cd project/services/auth_service && poetry run ruff check .
 
