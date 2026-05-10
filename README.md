@@ -77,8 +77,10 @@ make run-max-poll
 ```
 
 Для `docker-compose` используйте отдельные файлы `project/.env.auth.example` и
-`project/.env.bot.example` как шаблоны, а локальные `.env` с реальными секретами
-не добавляйте в git.
+`project/.env.bot.example` только как шаблоны. `docker-compose` читает рабочие
+env-файлы сервисов: `project/services/auth_service/.env` и
+`project/services/bot_service/.env`.
+Локальные env-файлы с реальными секретами не добавляйте в git.
 
 ## Пользовательский flow проверки
 

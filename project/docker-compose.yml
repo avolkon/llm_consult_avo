@@ -14,7 +14,7 @@ services:
     build:
       context: ./services/auth_service
     env_file:
-      - ./.env.auth.example
+      - ./services/auth_service/.env
     ports:
       - "8000:8000"
     command: ["poetry", "run", "auth-service"]
@@ -23,7 +23,7 @@ services:
     build:
       context: ./services/bot_service
     env_file:
-      - ./.env.bot.example
+      - ./services/bot_service/.env
     depends_on:
       - redis
       - rabbitmq
@@ -35,7 +35,7 @@ services:
     build:
       context: ./services/bot_service
     env_file:
-      - ./.env.bot.example
+      - ./services/bot_service/.env
     depends_on:
       - redis
       - rabbitmq
