@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 import time
 from typing import TYPE_CHECKING, Any
 
@@ -74,4 +75,9 @@ def llm_request(
 
 def run_worker_main() -> None:
     """Poetry script entrypoint для запуска celery worker."""
-    celery_app.worker_main(["worker", "--loglevel=INFO"])
+    argv = ["worker", "--loglevel=INFO"]
+    # Windows: пул prefork/multiprocessing часто даёт WinError 5 у дочерних процессов;
+    # solo — один процесс, достаточно для локальной разработки.
+    if sys.platform == "win32":
+        argv.extend(["--pool=solo"])
+    celery_app.worker_main(argv)
