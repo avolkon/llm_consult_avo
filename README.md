@@ -3,43 +3,64 @@
 Система LLM-консультаций с аутентификацией и чат-ботом в мессенджере **MAX** (не Telegram).
 
 ## Структура проекта
+
+Срез репозитория (без локальных `.venv`, `__pycache__`, `.pytest_cache`, `.ruff_cache`, `auth.db`, рабочих `.env`):
+
+```
 llm_consult_avo/
+├── .cursor/
+│   └── rules/                 # правила Cursor (секреты, пошаговый README, git …)
 ├── project/
-│ ├── services/
-│ │ ├── auth_service/ # FastAPI сервис аутентификации
-│ │ │ ├── app/
-│ │ │ │ ├── main.py # FastAPI app, lifespan и /health
-│ │ │ │ ├── api/ # Роутеры FastAPI
-│ │ │ │ ├── core/ # Конфигурация, security, исключения
-│ │ │ │ ├── db/ # SQLAlchemy модели, сессии
-│ │ │ │ ├── repositories/ # Работа с БД
-│ │ │ │ ├── schemas/ # Pydantic схемы
-│ │ │ │ └── usecases/ # Бизнес-логика
-│ │ │ ├── tests/ # Тесты
-│ │ │ ├── pyproject.toml # Poetry зависимости
-│ │ │ ├── .env.example # Шаблон переменных окружения
-│ │ │ └── Dockerfile
-│ │ │
-│ │ └── bot_service/ # Бот MAX (maxapi + FastAPI webhook / polling, Celery)
-│ │ ├── app/
-│ │ │ ├── main.py # Точка входа
-│ │ │ ├── bot/ # Хендлеры, диспетчер
-│ │ │ ├── core/ # Конфигурация, JWT
-│ │ │ ├── infra/ # Redis, Celery
-│ │ │ ├── services/ # OpenRouter клиент
-│ │ │ └── tasks/ # Celery задачи
-│ │ ├── tests/
-│ │ ├── pyproject.toml
-│ │ ├── .env.example
-│ │ └── Dockerfile
-│ │
-│ ├── docker-compose.yml
-│ ├── README.md
-│ ├── .env.auth.example
-│ └── .env.bot.example
-│
+│   ├── docker-compose.yml     # Redis, RabbitMQ, образы auth/bot/celery (см. compose)
+│   ├── README.md
+│   ├── .env.auth.example
+│   ├── .env.bot.example
+│   ├── scripts/               # вспомогательные скрипты (в т.ч. проверка env для compose)
+│   │
+│   └── services/              # каталог микросервисов: auth + bot (не путать с app/services у bot)
+│       │
+│       ├── auth_service/      # FastAPI: регистрация, логин, JWT, /health
+│       │   ├── app/
+│       │   │   ├── main.py
+│       │   │   ├── api/       # FastAPI-роутеры, зависимости
+│       │   │   ├── core/      # config, security, rate_limiter …
+│       │   │   ├── db/        # SQLAlchemy
+│       │   │   ├── repositories/
+│       │   │   ├── schemas/
+│       │   │   └── usecases/
+│       │   ├── tests/
+│       │   ├── Dockerfile
+│       │   ├── pyproject.toml
+│       │   ├── poetry.lock
+│       │   ├── pytest.ini
+│       │   ├── .env.example
+│       │   └── README.md
+│       │
+│       └── bot_service/       # MAX: long polling (poll) / webhook (main); Celery+RabbitMQ; Redis; OpenRouter
+│           ├── app/
+│           │   ├── main.py    # FastAPI + webhook MAX
+│           │   ├── poll.py    # long polling MAX
+│           │   ├── bot/       # handlers, dispatcher, outbox_consumer → ответы в MAX
+│           │   ├── core/
+│           │   ├── infra/     # Redis; celery_app (брокер — RabbitMQ)
+│           │   ├── models/
+│           │   ├── services/    # auth_mapping, openrouter_client
+│           │   └── tasks/       # Celery: llm_request → ответ в Redis outbox
+│           ├── tests/
+│           ├── Dockerfile
+│           ├── pyproject.toml
+│           ├── poetry.lock
+│           ├── pytest.ini
+│           ├── .env.example
+│           └── README.md
+├── Разработка/                # DevRules, эпики, аудит, бэклог, шаблоны
 ├── Makefile
+├── README.md
+├── LICENSE
+├── Arch.txt
+├── ТЗ_МАКС.txt
 └── .gitignore
+```
 
 
 ## Команды Makefile (запуск из корня)
@@ -48,7 +69,7 @@ llm_consult_avo/
 |---------|----------|
 | make install | Установить зависимости для обоих сервисов |
 | make run-auth | Запустить auth_service (Poetry) |
-| make run-bot  | Заглушка bot_service (`bot-service`) |
+| make run-bot  | bot_service |
 | make run-max-poll | Long polling MAX (dev) |
 | make run-max-webhook | FastAPI + `/health` + webhook MAX |
 | make lint     | Проверить код через ruff (оба сервиса) |
@@ -66,6 +87,8 @@ llm_consult_avo/
 ### Пошаговая проверка окружения (корень клона и Docker)
 
 Последовательность: **шаг 1** — Poetry; **шаг 2** — pytest; **шаг 3** — Redis и RabbitMQ в Docker; **шаг 4** — запуск `auth_service`; **шаг 5** — `GET /health`; **шаг 6** — Celery worker; **шаг 7** — `max-poll` (см. «Режимы MAX»); **шаг 8** — `POST /auth/register`; **шаг 9** — JWT в буфер (`POST /auth/login` → `access_token`); **шаг 10** — `GET /auth/me` с JWT из буфера (опционально; см. подсказку про перезапись буфера).
+
+**До диалога с ботом в MAX:** контейнеры **шага 3** (`docker compose up -d redis rabbitmq`) должны быть **запущены и оставаться работать**, иначе бот и воркер не достучатся до Redis/RabbitMQ. Без **шага 6** (`poetry run celery-llm-worker`) ответ модели **не появится**: после текста пользователю может прийти только «Запрос отправлен, ответ появится в этом чате», пока очередь в RabbitMQ не обработана.
 
 **Корень клона** — каталог `llm_consult_avo`, в нём лежат `Makefile` и папка `project/`. В блоках ниже **первая строка** переводит в каталог клона (Windows) или в ожидаемое расположение клона под `Documents/GitHub` (macOS/Linux). Если ваш клон в другом месте — замените только эту первую строку.
 
@@ -254,6 +277,8 @@ cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/auth_service
 poetry run auth-service
 ```
 
+**Swagger (`/docs`):** `http://127.0.0.1:8000/docs` — окно с этим процессом занято; откройте URL в браузере вручную или в **другом** терминале: Windows `Start-Process "http://127.0.0.1:8000/docs"`; macOS `open "http://127.0.0.1:8000/docs"`; Linux `xdg-open "http://127.0.0.1:8000/docs"`.
+
 Эквивалент из корня репозитория через Makefile: `make run-auth` (нужен `make` и текущий каталог — корень клона).
 
 ---
@@ -326,9 +351,9 @@ poetry run celery-llm-worker
 
 ### Шаг 7: бот MAX — long polling (`max-poll`)
 
-**Перед запуском:** в `project/services/bot_service/.env` задан **`MAX_BOT_TOKEN`**, желательно **`MAX_DELIVERY_MODE=polling`**; Redis доступен (шаг 3). **Webhook у этого бота на стороне MAX должен быть отключён**, иначе polling и webhook конфликтуют (см. ниже раздел «Режимы MAX»).
+**Перед запуском:** в `project/services/bot_service/.env` задан **`MAX_BOT_TOKEN`**, желательно **`MAX_DELIVERY_MODE=polling`**; **контейнеры Redis и RabbitMQ из шага 3 уже подняты** (`docker compose … up -d` и статус *Up*). **Webhook у этого бота на стороне MAX должен быть отключён**, иначе polling и webhook конфликтуют (см. ниже раздел «Режимы MAX»).
 
-Для полной цепочки «вопрос в MAX → Celery → ответ» держите запущенными **шаг 6** (worker) и при необходимости **шаг 4** (auth). Один процесс на терминал; остановка: `Ctrl+C` или закрытие вкладки.
+Для полной цепочки «вопрос в MAX → Celery → ответ» держите запущенными **шаг 6** (worker; **обязателен** для обработки `llm_request`) и при необходимости **шаг 4** (auth). Один процесс на терминал; остановка: `Ctrl+C` или закрытие вкладки.
 
 В логе ожидается старт **outbox consumer** и переход диспетчера в режим ожидания обновлений MAX (**без** немедленного падения процесса).
 
@@ -514,7 +539,7 @@ User-friendly авторизация без ручного JWT вынесена 
 
 **Где в README команды шага 9 (JWT в буфер):** подзаголовок **[Шаг 9: JWT в буфер обмена](#step-9-jwt-clipboard)** — в разделе **«Пошаговая проверка окружения»** ближе к началу файла (три блока: Windows / macOS / Linux). По порядку в документе: **после шага 8**, **перед шагом 10**, ещё **до** раздела «Запуск».
 
-**Перед открытием чата** желательно уже иметь **JWT в буфере обмена**: выполните в терминале **шаг 8** (регистрация `POST /auth/register`, если пользователя ещё нет) и **шаг 9** (готовые команды — по ссылке выше). Локально для ответов бота должны быть запущены минимум **Redis/RabbitMQ**, **Celery worker** (шаг 6) и **long polling** (шаг 7), плюс **auth_service** (шаг 4) на порту 8000.
+**Перед открытием чата:** убедитесь, что **Docker** уже поднял **Redis и RabbitMQ** (**шаг 3**) — без них и без работающего **Celery worker** (**шаг 6**) ответ LLM в MAX не придёт. Желательно уже иметь **JWT в буфере обмена**: выполните **шаг 8** (регистрация, если пользователя ещё нет) и **шаг 9** (готовые команды — по ссылке выше). Минимум для ответов бота: контейнеры **шага 3**, **auth_service** (**шаг 4**, порт 8000), **celery-llm-worker** (**шаг 6**), **max-poll** (**шаг 7**).
 
 **Как открыть диалог**
 
@@ -528,7 +553,7 @@ User-friendly авторизация без ручного JWT вынесена 
 2. Затем отправьте **`/token `** и сразу после пробела **вставьте JWT из буфера** (в Windows обычно **Ctrl+V** в поле ввода). Итоговое сообщение: `/token <ваш_токен_одной_строкой>`.
 3. После успешной привязки токена можно писать **обычный текст** — вопрос для LLM (цепочка Celery → OpenRouter → ответ в MAX описана в списке сценария выше).
 
-Если бот не реагирует, проверьте, что **polling** запущен у вас локально (шаг 7), webhook у этого бота на стороне MAX **отключён** (см. раздел «Режимы MAX» ниже), и что токен не просрочен (при необходимости повторите **шаг 9**).
+Если бот не реагирует или приходит только «Запрос отправлен…» без ответа модели, проверьте: **Redis и RabbitMQ** в Docker (шаг 3, `docker compose ps`), **Celery worker** (шаг 6), **polling** локально (шаг 7), webhook у бота на стороне MAX **отключён** («Режимы MAX» ниже), токен не просрочен (повторите **шаг 9** при необходимости).
 
 ## Режимы MAX
 

@@ -139,10 +139,10 @@ celerybeat.pid
 *.aof
 *.pid
 
-# RabbitMQ
+# RabbitMQ (локальные каталоги данных; не затрагивает project/screenshots/RabbitMQ)
 mnesia/
-rabbitmq/
 rabbitmq-data/
+/rabbitmq/
 
 # ActiveMQ
 activemq-data/
@@ -224,3 +224,7 @@ __marimo__/
 /.cursor/*
 !/.cursor/rules/
 !/.cursor/rules/**
+
+# Windows (метаданные папок)
+desktop.ini
+Thumbs.db
