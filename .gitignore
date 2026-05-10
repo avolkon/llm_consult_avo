@@ -220,5 +220,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Local Cursor rules and workspace state
-/.cursor/
+# Cursor: локальное состояние IDE вне git; правила агента версионируем в .cursor/rules/
+/.cursor/*
+!/.cursor/rules/
+!/.cursor/rules/**
