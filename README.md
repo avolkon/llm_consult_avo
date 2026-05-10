@@ -57,11 +57,10 @@ llm_consult_avo/
 │           ├── .env.example
 │           └── README.md
 ├── screenshots/               # скриншоты для отчёта: swagger, max_bot, RabbitMQ, tests
-├── Разработка/                # DevRules, эпики, аудит, бэклог, шаблоны
+├── Разработка/                # Arch.txt, DevRules, эпики, аудит, бэклог
 ├── Makefile
 ├── README.md
 ├── LICENSE
-├── Arch.txt
 ├── ТЗ_МАКС.txt
 └── .gitignore
 ```

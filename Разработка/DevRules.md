@@ -77,7 +77,7 @@
 
 - **auth_service**: регистрация, логин, JWT; не знает про MAX/Redis/Celery деталей бота.
 - **bot_service**: MAX (maxapi), JWT-проверка, Redis (`max_auth` / `user_chat`, `max:outbox`), Celery → OpenRouter.
-- Источник требований по смыслу: `ТЗ_МАКС.txt`, `README.md`, `Arch.txt` при наличии.
+- Источник требований по смыслу: `ТЗ_МАКС.txt`, `README.md`, `Разработка/Arch.txt` при наличии.
 
 ---
 
