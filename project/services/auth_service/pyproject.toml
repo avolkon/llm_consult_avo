@@ -15,10 +15,10 @@ dependencies = [
     "asyncpg>=0.30.0,<0.31.0",
     "passlib>=1.7.4,<2.0.0",
     "bcrypt>=4.2.0,<5.0.0",
-    "python-jose>=3.3.0,<4.0.0",
     "aiosqlite>=0.22.1,<0.23.0",
     "python-multipart>=0.0.27,<0.0.28",
     "slowapi>=0.1.9,<0.2.0",
+    "pyjwt>=2.8.0,<3.0.0",
 ]
 
 [project.scripts]

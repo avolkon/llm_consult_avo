@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from app.core.exceptions import InvalidTokenError, TokenExpiredError
 from app.core.security import (
@@ -38,3 +39,30 @@ def test_decode_expired_token() -> None:
 
     with pytest.raises(TokenExpiredError):
         decode_token(token)
+
+
+def test_jwt_audience_roundtrip(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("JWT_AUDIENCE", "my-audience")
+    from app.core.config import get_settings
+
+    get_settings.cache_clear()
+    try:
+        token = create_access_token(sub="1", role="user", expires_minutes=60)
+        payload = decode_token(token)
+        assert payload.get("aud") == "my-audience"
+    finally:
+        monkeypatch.delenv("JWT_AUDIENCE", raising=False)
+        get_settings.cache_clear()
+
+
+def test_settings_reject_non_hs256_jwt_alg(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("JWT_ALG", "none")
+    from app.core.config import Settings, get_settings
+
+    get_settings.cache_clear()
+    try:
+        with pytest.raises(ValidationError):
+            Settings()
+    finally:
+        monkeypatch.delenv("JWT_ALG", raising=False)
+        get_settings.cache_clear()

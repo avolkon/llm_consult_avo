@@ -1,0 +1,43 @@
+================================================================================
+  Отчёт о выполнении: ИБ_задание_на_устранение_уязвимостей.txt
+  (фиксация по состоянию кода; проверяйте коммиты в репозитории)
+================================================================================
+
+P0-1  Изоляция Redis/RabbitMQ
+      → project/docker-compose.prod.example.yml; README (раздел Production).
+P0-2  Webhook MAX
+      → Разработка/ИБ/ИБ_webhook_MAX_доверие.txt; README ссылка.
+P0-3  Секреты не логируются
+      → проверка grep; README про Vault/K8s secrets.
+
+P1-1  Лимит тела
+      → README: nginx client_max_body_size; существующий middleware сохранён.
+P1-2  Rate limit /auth/register
+      → auth_service routes_auth: 10/hour.
+P1-3  Пароли
+      → RegisterRequest min 12, буква+цифра, мини-блоклист.
+P1-4  Email
+      → ИБ_политика_email_при_регистрации.txt.
+P1-5  Логи промптов
+      → LOG_PROMPT_CONTENT в bot config и handlers.
+P1-6  OPENROUTER_BASE_URL
+      → model_validator в bot config; в prod только https + *.openrouter.ai.
+
+P2-1  JWT aud / alg
+      → jwt_audience опционально; jwt_alg только HS256 (auth+bot).
+P2-2  Trust proxy
+      → TRUSTED_PROXY_HEADERS + rate_limit_key; README предупреждение.
+P2-3  Outbox text
+      → OutboxItem max length + обрезка в llm_tasks.
+P2-4  Security headers bot
+      → bot main.py middleware.
+P2-5  /docs в prod
+      → auth + bot FastAPI docs_url=None при ENV=prod|production.
+P2-6  Prompt injection
+      → README раздел + существующие regex (глубина — в документации).
+P2-7  JWT в чате
+      → README уже предупреждает; backlog без изменения кода.
+P2-8  uv audit
+      → make audit.
+
+================================================================================

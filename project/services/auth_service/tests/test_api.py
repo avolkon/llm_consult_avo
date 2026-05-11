@@ -1,8 +1,10 @@
 from fastapi.testclient import TestClient
 
+from tests.conftest import GOOD_PASSWORD
+
 
 def test_register_login_me_flow(client: TestClient) -> None:
-    register_payload = {"email": "user1@example.com", "password": "secret123"}
+    register_payload = {"email": "user1@example.com", "password": GOOD_PASSWORD}
 
     register_resp = client.post("/auth/register", json=register_payload)
     assert register_resp.status_code == 201
@@ -31,7 +33,7 @@ def test_register_login_me_flow(client: TestClient) -> None:
 
 
 def test_duplicate_email_returns_409(client: TestClient) -> None:
-    payload = {"email": "duplicate@example.com", "password": "secret123"}
+    payload = {"email": "duplicate@example.com", "password": GOOD_PASSWORD}
 
     first = client.post("/auth/register", json=payload)
     second = client.post("/auth/register", json=payload)
@@ -41,7 +43,7 @@ def test_duplicate_email_returns_409(client: TestClient) -> None:
 
 
 def test_login_wrong_password_returns_401(client: TestClient) -> None:
-    payload = {"email": "wrongpass@example.com", "password": "secret123"}
+    payload = {"email": "wrongpass@example.com", "password": GOOD_PASSWORD}
     client.post("/auth/register", json=payload)
 
     response = client.post(
@@ -67,9 +69,41 @@ def test_me_with_invalid_token_returns_401(client: TestClient) -> None:
 def test_invalid_email_returns_422(client: TestClient) -> None:
     response = client.post(
         "/auth/register",
-        json={"email": "not-an-email", "password": "secret123"},
+        json={"email": "not-an-email", "password": GOOD_PASSWORD},
     )
     assert response.status_code == 422
+
+
+def test_weak_password_rejected(client: TestClient) -> None:
+    r = client.post(
+        "/auth/register",
+        json={"email": "weak@example.com", "password": "Sh0rt!"},
+    )
+    assert r.status_code == 422
+
+
+def test_password_without_special_rejected(client: TestClient) -> None:
+    r = client.post(
+        "/auth/register",
+        json={"email": "nospec@example.com", "password": "ValidPass1"},
+    )
+    assert r.status_code == 422
+
+
+def test_password_without_uppercase_rejected(client: TestClient) -> None:
+    r = client.post(
+        "/auth/register",
+        json={"email": "noupper@example.com", "password": "validp@ss1"},
+    )
+    assert r.status_code == 422
+
+
+def test_password_without_digit_rejected(client: TestClient) -> None:
+    r = client.post(
+        "/auth/register",
+        json={"email": "nodigit@example.com", "password": "OnlyHere!Ab"},
+    )
+    assert r.status_code == 422
 
 
 def test_register_body_over_limit_returns_413(monkeypatch) -> None:
@@ -80,8 +114,7 @@ def test_register_body_over_limit_returns_413(monkeypatch) -> None:
     get_settings.cache_clear()
     app = create_app()
     with TestClient(app) as c:
-        # Тело > 120 байт; пароль в пределах max_length=128 схемы регистрации.
-        payload = b'{"email":"u@example.com","password":"' + b"x" * 85 + b'"}'
+        payload = b'{"email":"u@example.com","password":"' + (b"Aa1!" * 28) + b'"}'
         response = c.post(
             "/auth/register",
             content=payload,

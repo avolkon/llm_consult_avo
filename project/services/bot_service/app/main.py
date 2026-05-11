@@ -17,6 +17,7 @@ from app.bot.dispatcher import build_bot
 from app.bot.outbox_consumer import outbox_consumer_loop
 from app.core.config import get_settings, settings
 from app.infra.redis import close_redis
+from app.security.webhook_gate import webhook_preflight_response
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -49,16 +50,36 @@ def _webhook_and_consumer_lifespan(
 
 def create_app(*, with_max_webhook: bool = True) -> FastAPI:
     """with_max_webhook=False — без вызовов API MAX (например, unit-тесты /health)."""
+    _prod = settings.env in {"prod", "production"}
+    doc_kw = {
+        "docs_url": None if _prod else "/docs",
+        "redoc_url": None if _prod else "/redoc",
+        "openapi_url": None if _prod else "/openapi.json",
+    }
     if with_max_webhook:
         bot, dp = build_bot()
         webhook = FastAPIMaxWebhook(dp=dp, bot=bot)
         app = FastAPI(
             title="LLM consult — MAX bot",
             lifespan=_webhook_and_consumer_lifespan(bot, webhook),
+            **doc_kw,
         )
         webhook.setup(app, path=settings.webhook_path)
     else:
-        app = FastAPI(title="LLM consult — MAX bot (health-only)")
+        app = FastAPI(title="LLM consult — MAX bot (health-only)", **doc_kw)
+
+    @app.middleware("http")
+    async def security_headers_middleware(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        if settings.env in {"prod", "production"}:
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
+        return response
 
     @app.middleware("http")
     async def request_body_size_middleware(request: Request, call_next):
@@ -70,6 +91,13 @@ def create_app(*, with_max_webhook: bool = True) -> FastAPI:
                         return JSONResponse({"detail": "Request body too large"}, status_code=413)
                 except ValueError:
                     return JSONResponse({"detail": "Invalid Content-Length"}, status_code=400)
+        return await call_next(request)
+
+    @app.middleware("http")
+    async def webhook_gate_middleware(request: Request, call_next):
+        block = webhook_preflight_response(request, get_settings())
+        if block is not None:
+            return block
         return await call_next(request)
 
     @app.get("/health")

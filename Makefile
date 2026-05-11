@@ -36,6 +36,10 @@ publish:
 	cd project/services/auth_service && uv publish --dry-run
 	cd project/services/bot_service && uv publish --dry-run
 
+audit:
+	cd project/services/auth_service && uv audit
+	cd project/services/bot_service && uv audit
+
 lint-auth:
 	cd project/services/auth_service && uv run ruff check .
 

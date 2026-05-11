@@ -9,9 +9,11 @@ from typing import TYPE_CHECKING, Any
 
 import redis
 
+from app.core.config import get_settings
 from app.core.constants import OUTBOX_LIST_KEY, user_chat_key
 from app.infra.celery_app import celery_app
-from app.models.outbox import OutboxItem
+from app.models.outbox import OUTBOX_TEXT_MAX_LEN, OutboxItem
+from app.security.redis_integrity import seal_outbox_for_redis
 from app.services.openrouter_client import OpenRouterError, call_openrouter_sync
 
 if TYPE_CHECKING:
@@ -25,8 +27,6 @@ _worker_redis: redis.Redis | None = None
 def _get_sync_redis() -> redis.Redis:
     global _worker_redis
     if _worker_redis is None:
-        from app.core.config import get_settings
-
         _worker_redis = redis.from_url(
             get_settings().redis_url,
             decode_responses=True,
@@ -54,6 +54,9 @@ def llm_request(
         log.exception("Unexpected LLM error for sub=%s task_id=%s", sub, task_id)
         response_text = "Внутренняя ошибка при обращении к LLM."
 
+    if len(response_text) > OUTBOX_TEXT_MAX_LEN:
+        response_text = response_text[:OUTBOX_TEXT_MAX_LEN]
+
     max_user_id = r.get(user_chat_key(sub))
     if not max_user_id:
         log.warning(
@@ -70,7 +73,9 @@ def llm_request(
         "created_at": time.time(),
     }
     outbox_item = OutboxItem.model_validate(item)
-    r.rpush(OUTBOX_LIST_KEY, outbox_item.to_redis_json())
+    cfg = get_settings()
+    sec = cfg.redis_integrity_secret.get_secret_value() if cfg.redis_integrity_secret else None
+    r.rpush(OUTBOX_LIST_KEY, seal_outbox_for_redis(outbox_item, sec))
 
 
 def run_worker_main() -> None:

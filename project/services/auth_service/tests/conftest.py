@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator
 from pathlib import Path
 
+os.environ.setdefault(
+    "JWT_SECRET",
+    "auth_service_pytest_jwt_secret_32_char_minimum!!",
+)
+
+import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -13,6 +20,16 @@ from app.main import create_app
 
 TEST_DB_URL = "sqlite+aiosqlite:///./test_auth.db"
 TEST_DB_FILE = Path("test_auth.db")
+
+GOOD_PASSWORD = "ValidP@ss1"
+
+
+@pytest.fixture(autouse=True)
+def _clear_settings_cache() -> None:
+    yield
+    from app.core.config import get_settings
+
+    get_settings.cache_clear()
 
 
 @pytest_asyncio.fixture(scope="session")

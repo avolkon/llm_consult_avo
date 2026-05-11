@@ -11,6 +11,14 @@ os.environ.setdefault(
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _clear_bot_settings_cache() -> None:
+    yield
+    from app.core.config import get_settings
+
+    get_settings.cache_clear()
+
+
 @pytest.fixture
 def noop_fixture() -> None:
     """Базовая фикстура-заглушка для расширения тестового bootstrap."""

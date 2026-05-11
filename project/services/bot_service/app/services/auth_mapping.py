@@ -7,7 +7,9 @@ from typing import Any
 from redis.asyncio import Redis
 from redis.exceptions import WatchError
 
+from app.core.config import get_settings
 from app.core.constants import max_auth_key, user_chat_key
+from app.security.redis_integrity import parse_session_json, seal_session_json
 
 _REGISTER_MAX_WATCH_RETRIES = 64
 
@@ -31,7 +33,9 @@ async def register_token(redis: Redis, max_user_id: str, payload: dict[str, Any]
     role = str(payload.get("role", "user"))
     ttl = _jwt_ttl_seconds(payload)
 
-    auth_json = json.dumps({"sub": sub, "role": role}, ensure_ascii=False)
+    s = get_settings().redis_integrity_secret
+    sec = s.get_secret_value() if s else None
+    auth_json = seal_session_json(sub, role, sec)
     uc_key = user_chat_key(sub)
     ma_key = max_auth_key(max_user_id)
 
@@ -46,8 +50,21 @@ async def register_token(redis: Redis, max_user_id: str, payload: dict[str, Any]
             if old_max_user_id:
                 pipe.delete(max_auth_key(old_max_user_id))
             if old_data:
-                old_sub = json.loads(old_data)["sub"]
-                pipe.delete(user_chat_key(str(old_sub)))
+                raw_old = (
+                    old_data.decode()
+                    if isinstance(old_data, (bytes, bytearray))
+                    else str(old_data)
+                )
+                parsed_old = parse_session_json(raw_old, sec)
+                if parsed_old is None:
+                    try:
+                        old_sub = str(json.loads(raw_old).get("sub", ""))
+                    except json.JSONDecodeError:
+                        old_sub = ""
+                else:
+                    old_sub = parsed_old[0]
+                if old_sub:
+                    pipe.delete(user_chat_key(str(old_sub)))
             pipe.setex(ma_key, ttl, auth_json)
             pipe.setex(uc_key, ttl, max_user_id)
             await pipe.execute()
@@ -66,12 +83,13 @@ async def get_auth(redis: Redis, max_user_id: str) -> tuple[str, str] | None:
     raw = await redis.get(max_auth_key(max_user_id))
     if raw is None:
         return None
-    data: dict[str, Any] = json.loads(raw)
-    sub = str(data.get("sub", ""))
-    if not sub:
+    s = get_settings().redis_integrity_secret
+    sec = s.get_secret_value() if s else None
+    raw_str = raw.decode() if isinstance(raw, (bytes, bytearray)) else str(raw)
+    parsed = parse_session_json(raw_str, sec)
+    if parsed is None:
         return None
-    role = str(data.get("role", "user"))
-    return sub, role
+    return parsed
 
 
 async def get_chat(redis: Redis, sub: str) -> str | None:

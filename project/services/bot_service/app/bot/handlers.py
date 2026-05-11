@@ -4,6 +4,7 @@ from maxapi import Dispatcher
 from maxapi.types import BotStarted, Command, Message, MessageCreated
 from redis.asyncio import Redis
 
+from app.core.config import get_settings
 from app.core.constants import (
     MAX_PROMPT_LENGTH,
     is_prompt_suspicious,
@@ -46,18 +47,37 @@ async def process_user_text(redis: Redis, text: str, max_user_id: str) -> str:
 
     sub, role = auth
 
-    # Логируем все промпты для аудита (с sub и chat_id)
-    log.info(
-        "LLM prompt received | sub=%s | max_user_id=%s | length=%d | prompt=%r",
-        sub, max_user_id, len(text), text[:200],
-    )
-
-    # Проверяем на подозрительные (jailbreak) паттерны
-    if is_prompt_suspicious(text):
-        log.warning(
-            "SUSPICIOUS PROMPT BLOCKED | sub=%s | max_user_id=%s | prompt=%r",
-            sub, max_user_id, text[:200],
+    if get_settings().log_prompt_content:
+        log.info(
+            "LLM prompt received | sub=%s | max_user_id=%s | length=%d | prompt=%r",
+            sub,
+            max_user_id,
+            len(text),
+            text[:200],
         )
+    else:
+        log.info(
+            "LLM prompt received | sub=%s | max_user_id=%s | length=%d",
+            sub,
+            max_user_id,
+            len(text),
+        )
+
+    if is_prompt_suspicious(text):
+        if get_settings().log_prompt_content:
+            log.warning(
+                "SUSPICIOUS PROMPT BLOCKED | sub=%s | max_user_id=%s | prompt=%r",
+                sub,
+                max_user_id,
+                text[:200],
+            )
+        else:
+            log.warning(
+                "SUSPICIOUS PROMPT BLOCKED | sub=%s | max_user_id=%s | length=%d",
+                sub,
+                max_user_id,
+                len(text),
+            )
         return "Запрос отклонён: обнаружен потенциально опасный паттерн."
 
     try:

@@ -21,7 +21,9 @@ uv run auth-service
 - `APP_NAME`
 - `ENV`
 - `JWT_SECRET`
-- `JWT_ALG`
+- `JWT_ALG` (только HS256)
+- `JWT_AUDIENCE` (опционально; тогда же значение в bot_service)
+- `TRUSTED_PROXY_HEADERS` (опционально, за доверенным reverse proxy)
 - `ACCESS_TOKEN_EXPIRE_MINUTES`
 - `DATABASE_URL`
 - `API_HOST`
@@ -34,12 +36,14 @@ uv run auth-service
 - `GET /auth/me`
 - `GET /health`
 
+Rate limiting (slowapi, in-memory per процесс): `register` 10/hour, `login` 5/min, `me` 60/min; см. `app/core/rate_limiter.py`.
+
 ### Пример register
 
 ```bash
 curl -X POST http://localhost:8000/auth/register ^
   -H "Content-Type: application/json" ^
-  -d "{\"email\":\"user@example.com\",\"password\":\"secret123\"}"
+  -d "{\"email\":\"user@example.com\",\"password\":\"ValidP@ss1\"}"
 ```
 
 ### Пример login
@@ -47,7 +51,7 @@ curl -X POST http://localhost:8000/auth/register ^
 ```bash
 curl -X POST http://localhost:8000/auth/login ^
   -H "Content-Type: application/x-www-form-urlencoded" ^
-  -d "username=user@example.com&password=secret123"
+  -d "username=user@example.com&password=ValidP@ss1"
 ```
 
 ### Пример me

@@ -152,10 +152,10 @@ Set-Location "$R\project\services\bot_service"; uv run celery-llm-worker
 Set-Location "$R\project\services\bot_service"; uv run max-poll
 
 # Шаг 8 — регистрация (email/пароль замените при необходимости)
-Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/register" -Method Post -ContentType "application/json" -Body '{"email":"readme-demo@example.com","password":"secret123"}'
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/register" -Method Post -ContentType "application/json" -Body '{"email":"readme-demo@example.com","password":"ValidP@ss1"}'
 
 # Шаг 9 и 10 — токен без ошибок буфера (логин + /me + по желанию буфер для MAX)
-$token = (Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=readme-demo@example.com&password=secret123").access_token
+$token = (Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=readme-demo@example.com&password=ValidP@ss1").access_token
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/me" -Headers @{ Authorization = "Bearer $token" }
 $token | Set-Clipboard   # вставить в MAX после /token 
 ```
@@ -399,7 +399,7 @@ uv run max-poll
 
 ```powershell
 Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
-Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/register" -Method Post -ContentType "application/json" -Body '{"email":"readme-demo@example.com","password":"secret123"}'
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/register" -Method Post -ContentType "application/json" -Body '{"email":"readme-demo@example.com","password":"ValidP@ss1"}'
 ```
 
 **macOS (Terminal, bash/zsh)**
@@ -408,7 +408,7 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/register" -Method Post -Conte
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
 curl -sS -w "\nHTTP_CODE:%{http_code}\n" -X POST "http://127.0.0.1:8000/auth/register" \
   -H "Content-Type: application/json" \
-  -d '{"email":"readme-demo@example.com","password":"secret123"}'
+  -d '{"email":"readme-demo@example.com","password":"ValidP@ss1"}'
 ```
 
 **Linux (bash)**
@@ -417,7 +417,7 @@ curl -sS -w "\nHTTP_CODE:%{http_code}\n" -X POST "http://127.0.0.1:8000/auth/reg
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
 curl -sS -w "\nHTTP_CODE:%{http_code}\n" -X POST "http://127.0.0.1:8000/auth/register" \
   -H "Content-Type: application/json" \
-  -d '{"email":"readme-demo@example.com","password":"secret123"}'
+  -d '{"email":"readme-demo@example.com","password":"ValidP@ss1"}'
 ```
 
 ---
@@ -434,7 +434,7 @@ curl -sS -w "\nHTTP_CODE:%{http_code}\n" -X POST "http://127.0.0.1:8000/auth/reg
 
 ```powershell
 Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
-(Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=readme-demo@example.com&password=secret123").access_token | Set-Clipboard
+(Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=readme-demo@example.com&password=ValidP@ss1").access_token | Set-Clipboard
 ```
 
 **macOS (Terminal, bash/zsh)** — нужен `python3` (обычно уже есть). Буфер: `pbcopy`.
@@ -443,7 +443,7 @@ Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_av
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
 curl -sS -X POST "http://127.0.0.1:8000/auth/login" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=readme-demo@example.com&password=secret123" \
+  -d "username=readme-demo@example.com&password=ValidP@ss1" \
 | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'], end='')" \
 | pbcopy
 ```
@@ -454,7 +454,7 @@ curl -sS -X POST "http://127.0.0.1:8000/auth/login" \
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
 curl -sS -X POST "http://127.0.0.1:8000/auth/login" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=readme-demo@example.com&password=secret123" \
+  -d "username=readme-demo@example.com&password=ValidP@ss1" \
 | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'], end='')" \
 | xclip -selection clipboard
 ```
@@ -470,7 +470,7 @@ curl -sS -X POST "http://127.0.0.1:8000/auth/login" \
 **Windows (PowerShell)** — надёжный вариант **без буфера**: сначала логин в переменную, потом запрос (подставьте свой email/пароль).
 
 ```powershell
-$token = (Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=readme-demo@example.com&password=secret123").access_token
+$token = (Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=readme-demo@example.com&password=ValidP@ss1").access_token
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/me" -Headers @{ Authorization = "Bearer $token" }
 ```
 
@@ -520,6 +520,37 @@ make run-max-poll
 env-файлы сервисов: `project/services/auth_service/.env` и
 `project/services/bot_service/.env`.
 Локальные env-файлы с реальными секретами не добавляйте в git.
+
+## Production и безопасность (ИБ)
+
+- **Redis и RabbitMQ** не публикуйте в интернет. Пример внутренней топологии без `ports` на хост: [`project/docker-compose.prod.example.yml`](project/docker-compose.prod.example.yml) — **только** узел Redis/RabbitMQ, не полный прод-стек; пароли укажите в `REDIS_URL` / `CELERY_BROKER_URL` в `bot_service/.env`.
+- **Redis: целостность данных** (опционально, рекомендуется в prod): `REDIS_INTEGRITY_SECRET` в `bot_service` — одинаковая строка в процессе webhook и в **Celery worker** (подпись `max_auth:*` и `max:outbox`). Без секрета поведение как раньше (обратная совместимость). Секрет есть у приложения: это не замена сетевой изоляции Redis.
+- **Секреты** в бою — Vault, Kubernetes Secrets или аналог облака; не класть в git.
+- **Лимит размера HTTP-тела** дублируйте на reverse proxy, например nginx: `client_max_body_size 1m;` в `server` / `location`.
+- **Trust proxy**: в `auth_service` переменная `TRUSTED_PROXY_HEADERS=true` только если `X-Forwarded-For` выставляет **ваш** nginx/traefik; иначе возможен обход rate limit.
+- **Rate limit (auth)**: лимиты slowapi считаются **в памяти процесса**; несколько реплик без общего backend умножают лимиты; при жёстких требованиях — Redis для slowapi или WAF на edge.
+- **JWT_AUDIENCE** (опционально): одинаковое значение в auth и bot — claim `aud` и строгая проверка.
+- **OpenRouter** при `ENV=prod` в bot: только `https` и хост `openrouter.ai`.
+- **Логи промптов**: при `ENV=prod|production` по умолчанию фрагменты промптов **не** логируются (`LOG_PROMPT_CONTENT` можно не задавать); `LOG_PROMPT_CONTENT=true` включает логи и в prod.
+- **MAX_BOT_TOKEN**: в prod плейсхолдер или пустое значение блокирует старт — см. валидацию в `bot_service`.
+- **Swagger** `/docs`: отключён при `ENV=prod` или `production` в обоих сервисах.
+- **Webhook MAX** (опционально): модель доверия MAX/maxapi, переменные `WEBHOOK_REQUEST_SECRET`, `WEBHOOK_REQUEST_HEADER`, `WEBHOOK_ALLOWED_CIDRS`, `WEBHOOK_FORWARDED_FOR_TRUST_HOPS` и пример nginx — [`Разработка/ИБ/ИБ_webhook_MAX_доверие.txt`](Разработка/ИБ/ИБ_webhook_MAX_доверие.txt).
+- **Регистрация / email**: политика ответа 409 — [`Разработка/ИБ/ИБ_политика_email_при_регистрации.txt`](Разработка/ИБ/ИБ_политика_email_при_регистрации.txt).
+- **Защита от prompt injection** в боте: длина промпта + regex-блокировки; модель LLM остаётся отдельной поверхностью — не считать защиту полной.
+- **Celery (bot)**: смена `CELERY_BROKER_URL` требует **перезапуска** воркера (значение подхватывается при старте процесса).
+- **JWT (auth)**: реализовано через **PyJWT**; периодически запускайте `make audit` / `uv audit` в CI и локально.
+
+### Аудит зависимостей (CVE)
+
+```bash
+make audit
+```
+
+или в каждом сервисе: `uv audit`. Регулярный аудит (например, в pipeline при изменении lock-файлов) снижает репутационный и CVE-риск за счёт своевременных обновлений.
+
+### Чек-лист и отчёты ИБ
+
+Папка [`Разработка/ИБ/`](Разработка/ИБ/): чек-лист, аудиты, отчёт о выполнении задания.
 
 ## Пользовательский flow проверки
 

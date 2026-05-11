@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from pydantic import SecretStr
 
 from app.bot import outbox_consumer
 from app.models.outbox import OutboxItem
@@ -117,6 +118,33 @@ async def test_outbox_consumer_skips_duplicate_task(
         return redis
     monkeypatch.setattr(outbox_consumer, "get_redis", fake_get_redis)
     monkeypatch.setattr(outbox_consumer.settings, "outbox_dedup_enabled", True)
+
+    with pytest.raises(asyncio.CancelledError):
+        await outbox_consumer.outbox_consumer_loop(bot)
+
+    assert bot.calls == []
+
+
+@pytest.mark.asyncio
+async def test_outbox_consumer_skips_invalid_hmac(monkeypatch: pytest.MonkeyPatch) -> None:
+    item = OutboxItem(
+        max_user_id="100",
+        text="hello",
+        task_id="task-bad",
+        created_at=123.0,
+    )
+    redis = _FakeRedis([("max:outbox", item.to_redis_json()), asyncio.CancelledError()])
+    bot = _FakeBot()
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.setattr(outbox_consumer, "get_redis", fake_get_redis)
+    monkeypatch.setattr(
+        outbox_consumer.settings,
+        "redis_integrity_secret",
+        SecretStr("012345678901234567890123456789ab"),
+    )
 
     with pytest.raises(asyncio.CancelledError):
         await outbox_consumer.outbox_consumer_loop(bot)

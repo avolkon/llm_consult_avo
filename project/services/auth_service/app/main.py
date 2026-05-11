@@ -25,7 +25,14 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title=settings.app_name, lifespan=lifespan)
+    _prod = settings.env in {"prod", "production"}
+    app = FastAPI(
+        title=settings.app_name,
+        lifespan=lifespan,
+        docs_url=None if _prod else "/docs",
+        redoc_url=None if _prod else "/redoc",
+        openapi_url=None if _prod else "/openapi.json",
+    )
     app.include_router(build_api_router())
 
     # Attach rate limiter

@@ -1,0 +1,35 @@
+# Пример сегмента инфраструктуры для production: Redis и RabbitMQ без публикации
+# портов на хост. Поднимайте рядом с приложениями в одной Docker-сети и
+# указывайте в bot_service REDIS_URL / CELERY_BROKER_URL с паролями.
+#
+# ВНИМАНИЕ: это не полный production-стек заказчика — только иллюстрация узла
+# Redis/RabbitMQ. Итоговый compose/Terraform/K8s ревьюйте отдельно (TLS, сеть,
+# секреты, healthcheck, бэкапы).
+#
+# Использование (из каталога project/):
+#   export REDIS_PASSWORD=...   # сильный пароль
+#   export RABBITMQ_PASSWORD=...
+#   docker compose -f docker-compose.prod.example.yml up -d
+#
+# В образах auth/bot подключайте те же credentials (см. README, раздел Production).
+# Для bot_service в production задайте также REDIS_INTEGRITY_SECRET (одинаково
+# в webhook-процессе и Celery worker) — см. README и bot_service/.env.example.
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+    networks: [backend]
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-app}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?set RABBITMQ_PASSWORD}
+    networks: [backend]
+
+networks:
+  backend:
+    driver: bridge

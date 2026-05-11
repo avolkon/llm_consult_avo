@@ -17,7 +17,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     response_model=UserPublic,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("10/hour")
 async def register(
+    request: Request,
     payload: RegisterRequest,
     auth_uc: AuthUseCase = Depends(get_auth_uc),
 ) -> UserPublic:
@@ -35,7 +37,9 @@ async def login(
 
 
 @router.get("/me", response_model=UserPublic)
+@limiter.limit("60/minute")
 async def me(
+    request: Request,
     user_id: Annotated[int, Depends(get_current_user_id)],
     auth_uc: AuthUseCase = Depends(get_auth_uc),
 ) -> UserPublic:

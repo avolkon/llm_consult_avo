@@ -11,6 +11,7 @@ from app.core.constants import OUTBOX_LIST_KEY
 from app.core.config import settings
 from app.infra.redis import get_redis
 from app.models.outbox import OutboxItem
+from app.security.redis_integrity import outbox_line_is_valid, seal_outbox_for_redis
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +43,15 @@ async def outbox_consumer_loop(bot: Bot) -> None:
             log.exception("Отправка сообщения в MAX из outbox: raw=%s", data)
             continue
 
+        sec = (
+            settings.redis_integrity_secret.get_secret_value()
+            if settings.redis_integrity_secret
+            else None
+        )
+        if not outbox_line_is_valid(item, sec):
+            log.warning("Outbox HMAC verification failed, task_id=%s", item.task_id)
+            continue
+
         try:
             if settings.outbox_dedup_enabled and item.task_id:
                 dedup_key = f"outbox:processed:{item.task_id}"
@@ -59,4 +69,4 @@ async def outbox_consumer_loop(bot: Bot) -> None:
             log.exception("Ошибка доставки в MAX: task_id=%s", item.task_id)
             if item.retry_count < settings.outbox_send_max_retries:
                 retry_item = item.model_copy(update={"retry_count": item.retry_count + 1})
-                await redis.rpush(OUTBOX_LIST_KEY, retry_item.to_redis_json())
+                await redis.rpush(OUTBOX_LIST_KEY, seal_outbox_for_redis(retry_item, sec))
