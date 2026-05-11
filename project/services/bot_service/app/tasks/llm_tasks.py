@@ -12,9 +12,13 @@ import redis
 from app.core.config import get_settings
 from app.core.constants import OUTBOX_LIST_KEY, user_chat_key
 from app.infra.celery_app import celery_app
-from app.models.outbox import OutboxItem, clip_text_for_max_api
+from app.models.outbox import MAX_API_MESSAGE_TEXT_LEN, OutboxItem, clip_text_for_max_api
 from app.security.redis_integrity import seal_outbox_for_redis
-from app.services.openrouter_client import OpenRouterError, call_openrouter_sync
+from app.services.openrouter_client import (
+    OpenRouterError,
+    call_openrouter_fit_to_max_chars_sync,
+    call_openrouter_sync,
+)
 
 if TYPE_CHECKING:
     from celery.app.task import Task
@@ -51,6 +55,22 @@ def llm_request(
 
     try:
         response_text = call_openrouter_sync(prompt)
+        if len(response_text) > MAX_API_MESSAGE_TEXT_LEN:
+            log.info(
+                "LLM черновик длиннее лимита MAX (%s символов, нужно ≤%s), второй запрос на вписывание в лимит",
+                len(response_text),
+                MAX_API_MESSAGE_TEXT_LEN,
+            )
+            try:
+                response_text = call_openrouter_fit_to_max_chars_sync(
+                    response_text, MAX_API_MESSAGE_TEXT_LEN
+                )
+            except OpenRouterError:
+                log.warning(
+                    "Не удалось вписать ответ в лимит через LLM (sub=%s task_id=%s), будет обрезка",
+                    sub,
+                    task_id,
+                )
     except OpenRouterError:
         log.warning("OpenRouter error for sub=%s task_id=%s", sub, task_id)
         response_text = "Не удалось получить ответ от модели."

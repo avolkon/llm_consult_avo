@@ -35,6 +35,23 @@ class Settings(BaseSettings):
     openrouter_site_url: str = "https://example.com"
     openrouter_app_name: str = "bot-service"
     openrouter_timeout_seconds: float = 60.0
+    # Совпадает с лимитом отправки текста в MAX (maxapi SendMessage); system prompt просит модель уложиться.
+    openrouter_reply_max_chars: int = Field(
+        default=3999,
+        ge=256,
+        le=3999,
+        description="Целевая максимальная длина ответа LLM в символах (инструкция + край для обрезки на стороне API)",
+    )
+    # Потолок выходных токенов OpenRouter; 0 — не передавать max_tokens (модели без жёсткого потолка).
+    openrouter_max_output_tokens: int = Field(
+        default=4500,
+        ge=0,
+        description="Параметр max_tokens в /chat/completions; 0 = не отправлять",
+    )
+    openrouter_system_prompt_extra: str = Field(
+        default="",
+        description="Дополнительный фрагмент system prompt (тон, роль); не подменяет правила длины и безопасности",
+    )
 
     redis_url: str = "redis://localhost:6379/0"
     celery_broker_url: str = "amqp://guest:guest@localhost:5672//"
