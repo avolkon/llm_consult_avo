@@ -61,7 +61,7 @@ llm_consult_avo/
 │           ├── .env.example
 │           └── README.md
 ├── screenshots/               # скриншоты для отчёта: swagger, max_bot, RabbitMQ, tests
-├── Разработка/                # Arch.txt, DevRules, эпики, аудит, бэклог
+├── Разработка/                # Arch.txt, ИБ/, эпики, бэклог (DevRules — локально, см. .gitignore)
 ├── Makefile
 ├── README.md
 ├── LICENSE
