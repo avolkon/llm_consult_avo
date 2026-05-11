@@ -255,7 +255,7 @@ Set-Location "project\services\auth_service"; uv run pytest; Set-Location "..\bo
 **macOS (Terminal, bash/zsh)**
 
 ```bash
-cd "$HOME/Documents/GitHub/llm_consult_avo"
+cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
 cd project/services/auth_service && uv run pytest && cd ../bot_service && uv run pytest && cd ../../..
 ```
 
