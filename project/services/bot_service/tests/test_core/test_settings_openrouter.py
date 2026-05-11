@@ -4,9 +4,13 @@ import pytest
 from pydantic import ValidationError
 
 
-def test_openrouter_rejects_non_openrouter_host_in_prod(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_openrouter_rejects_non_openrouter_host_in_prod(
+    monkeypatch: pytest.MonkeyPatch,
+    prod_backend_env: None,
+) -> None:
     monkeypatch.setenv("ENV", "production")
     monkeypatch.setenv("OPENROUTER_BASE_URL", "https://evil.com/v1")
+    monkeypatch.setenv("MAX_BOT_TOKEN", "real-max-token-for-openrouter-test-only-xx")
     from app.core.config import get_settings
 
     get_settings.cache_clear()
@@ -16,6 +20,7 @@ def test_openrouter_rejects_non_openrouter_host_in_prod(monkeypatch: pytest.Monk
     finally:
         monkeypatch.delenv("ENV", raising=False)
         monkeypatch.delenv("OPENROUTER_BASE_URL", raising=False)
+        monkeypatch.delenv("MAX_BOT_TOKEN", raising=False)
         get_settings.cache_clear()
 
 

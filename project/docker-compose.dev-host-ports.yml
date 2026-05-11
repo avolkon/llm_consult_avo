@@ -1,0 +1,14 @@
+# Публикация Redis/RabbitMQ на localhost для инструментов на хосте (redis-cli, браузер 15672).
+# Запуск из project/: docker compose -f docker-compose.yml -f docker-compose.dev-host-ports.yml up -d
+#
+# В production такой overlay не используйте: брокеры только во внутренней сети.
+
+services:
+  redis:
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    ports:
+      - "5672:5672"
+      - "15672:15672"

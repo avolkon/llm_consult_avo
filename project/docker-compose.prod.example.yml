@@ -1,26 +1,39 @@
-# Пример сегмента инфраструктуры для production: Redis и RabbitMQ без публикации
-# портов на хост. Поднимайте рядом с приложениями в одной Docker-сети и
-# указывайте в bot_service REDIS_URL / CELERY_BROKER_URL с паролями.
+# Пример Redis + RabbitMQ для production: только внутренняя Docker-сеть, TLS, без ports на хост.
+# Это не полный production-стек заказчика — только узел кэша/очереди; compose/k8s/Terraform ревьюйте отдельно.
+# Эталон для «не из интернета»: сервисы приложений подключаются по имени (redis, rabbitmq).
 #
-# ВНИМАНИЕ: это не полный production-стек заказчика — только иллюстрация узла
-# Redis/RabbitMQ. Итоговый compose/Terraform/K8s ревьюйте отдельно (TLS, сеть,
-# секреты, healthcheck, бэкапы).
+# Перед первым запуском (из корня репозитория):
+#   python project/scripts/gen_sample_tls_certs.py
 #
-# Использование (из каталога project/):
-#   export REDIS_PASSWORD=...   # сильный пароль
+# Запуск из каталога project/:
+#   export REDIS_PASSWORD=...
 #   export RABBITMQ_PASSWORD=...
 #   docker compose -f docker-compose.prod.example.yml up -d
 #
-# В образах auth/bot подключайте те же credentials (см. README, раздел Production).
-# Для bot_service в production задайте также REDIS_INTEGRITY_SECRET (одинаково
-# в webhook-процессе и Celery worker) — см. README и bot_service/.env.example.
+# В bot_service (.env) для ENV=prod:
+#   REDIS_URL=rediss://:${REDIS_PASSWORD}@redis:6379/0
+#   CELERY_BROKER_URL=amqps://${RABBITMQ_USER:-app}:${RABBITMQ_PASSWORD}@rabbitmq:5671//
+#   REDIS_SSL_CA_CERTS=/run/tls/ca.crt
+#   CELERY_BROKER_CA_CERT=/run/tls/ca.crt
+# (смонтируйте ./tls/ca.crt в образ приложения, например в /run/tls/ca.crt)
+# REDIS_INTEGRITY_SECRET — одинаковый в webhook и Celery worker (см. README).
+#
+# ВНИМАНИЕ: сгенерированные сертификаты только для отладки топологии, не для боевого PKI.
 
 services:
   redis:
     image: redis:7-alpine
     command: >
       redis-server
+      --tls-port 6379
+      --port 0
+      --tls-cert-file /etc/tls/server.crt
+      --tls-key-file /etc/tls/server.key
+      --tls-ca-cert-file /etc/tls/ca.crt
+      --tls-auth-clients optional
       --requirepass ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+    volumes:
+      - ./tls:/etc/tls:ro
     networks: [backend]
 
   rabbitmq:
@@ -28,6 +41,9 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-app}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?set RABBITMQ_PASSWORD}
+    volumes:
+      - ./tls:/etc/tls:ro
+      - ./docker/rabbitmq/rabbitmq_tls.conf:/etc/rabbitmq/rabbitmq.conf:ro
     networks: [backend]
 
 networks:

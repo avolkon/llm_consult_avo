@@ -40,6 +40,9 @@ audit:
 	cd project/services/auth_service && uv audit
 	cd project/services/bot_service && uv audit
 
+tls-certs:
+	python project/scripts/gen_sample_tls_certs.py
+
 lint-auth:
 	cd project/services/auth_service && uv run ruff check .
 

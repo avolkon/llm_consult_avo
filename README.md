@@ -95,7 +95,7 @@ llm_consult_avo/
 
 Последовательность: **шаг 1** — uv (`uv sync` в обоих сервисах); **шаг 2** — pytest; **шаг 3** — Redis и RabbitMQ в Docker; **шаг 4** — запуск `auth_service`; **шаг 5** — `GET /health`; **шаг 6** — Celery worker; **шаг 7** — `max-poll` (см. «Режимы MAX»); **шаг 8** — `POST /auth/register`; **шаг 9** — JWT в буфер (`POST /auth/login` → `access_token`); **шаг 10** — `GET /auth/me` с JWT из буфера (опционально; см. подсказку про перезапись буфера).
 
-**До диалога с ботом в MAX:** контейнеры **шага 3** (`docker compose up -d redis rabbitmq`) должны быть **запущены и оставаться работать**, иначе бот и воркер не достучатся до Redis/RabbitMQ. Без **шага 6** (`uv run celery-llm-worker`) ответ модели **не появится**: после текста пользователю может прийти только «Запрос отправлен, ответ появится в этом чате», пока очередь в RabbitMQ не обработана.
+**До диалога с ботом в MAX:** контейнеры **шага 3** (`docker compose` с overlay портов на localhost — см. шаг 3) должны быть **запущены и оставаться работать**, иначе бот и воркер не достучатся до Redis/RabbitMQ. Без **шага 6** (`uv run celery-llm-worker`) ответ модели **не появится**: после текста пользователю может прийти только «Запрос отправлен, ответ появится в этом чате», пока очередь в RabbitMQ не обработана.
 
 **Корень клона** — каталог `llm_consult_avo`, в нём лежат `Makefile` и папка `project/`. В блоках ниже **первая строка** переводит в каталог клона (Windows) или в ожидаемое расположение клона под `Documents/GitHub` (macOS/Linux). Если ваш клон в другом месте — замените только эту первую строку.
 
@@ -137,7 +137,7 @@ Set-Location "$R"; Set-Location "project\services\auth_service"; uv sync; Set-Lo
 Set-Location "$R"; Set-Location "project\services\auth_service"; uv run pytest; Set-Location "..\bot_service"; uv run pytest; Set-Location "..\..\.."
 
 # Шаг 3 — Redis + RabbitMQ
-Set-Location "$R"; Set-Location "project"; docker compose up -d redis rabbitmq; Set-Location ".."
+Set-Location "$R"; Set-Location "project"; docker compose -f docker-compose.yml -f docker-compose.dev-host-ports.yml up -d redis rabbitmq; Set-Location ".."
 
 # Шаг 4 — auth_service (терминал занят до Ctrl+C)
 Set-Location "$R\project\services\auth_service"; uv run auth-service
@@ -224,7 +224,7 @@ cd project/services/auth_service && uv run pytest && cd ../bot_service && uv run
 
 ### Шаг 3: Redis и RabbitMQ через Docker Compose
 
-Поднимаются только сервисы `redis` и `rabbitmq` из `project/docker-compose.yml` (остальные контейнеры приложения не стартуют).
+Поднимаются только сервисы `redis` и `rabbitmq` из `project/docker-compose.yml`. Базовый файл **не публикует** порты на хост (узлы доступны только другим контейнерам в сети Compose). Для разработки на хосте с `localhost:6379` / `localhost:15672` подключайте второй файл **`docker-compose.dev-host-ports.yml`** (как в командах ниже).
 
 Перед запуском: **Windows и macOS — Docker Desktop уже запущен**; **Linux — работает `docker`** (см. блок «Docker» выше).
 
@@ -232,24 +232,24 @@ cd project/services/auth_service && uv run pytest && cd ../bot_service && uv run
 
 ```powershell
 Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
-Set-Location "project"; docker compose up -d redis rabbitmq; Set-Location ".."
+Set-Location "project"; docker compose -f docker-compose.yml -f docker-compose.dev-host-ports.yml up -d redis rabbitmq; Set-Location ".."
 ```
 
 **macOS (Terminal, bash/zsh)**
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
-cd project && docker compose up -d redis rabbitmq && cd ..
+cd project && docker compose -f docker-compose.yml -f docker-compose.dev-host-ports.yml up -d redis rabbitmq && cd ..
 ```
 
 **Linux (bash)**
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
-cd project && docker compose up -d redis rabbitmq && cd ..
+cd project && docker compose -f docker-compose.yml -f docker-compose.dev-host-ports.yml up -d redis rabbitmq && cd ..
 ```
 
-Проверка (из корня клона, опционально): `docker compose -f project/docker-compose.yml ps` — у `redis` и `rabbitmq` должен быть статус `running` / `Up`. Управление RabbitMQ в браузере: [http://localhost:15672](http://localhost:15672) (логин/пароль по умолчанию у образа — часто `guest` / `guest`, если вы их не меняли в Compose).
+Проверка (из корня клона, опционально): `docker compose -f project/docker-compose.yml -f project/docker-compose.dev-host-ports.yml ps` — у `redis` и `rabbitmq` должен быть статус `running` / `Up`. Управление RabbitMQ в браузере: [http://localhost:15672](http://localhost:15672) (логин/пароль по умолчанию у образа — часто `guest` / `guest`, если вы их не меняли в Compose; **порты на хост** подключает только `docker-compose.dev-host-ports.yml`).
 
 ---
 
@@ -523,7 +523,7 @@ env-файлы сервисов: `project/services/auth_service/.env` и
 
 ## Production и безопасность (ИБ)
 
-- **Redis и RabbitMQ** не публикуйте в интернет. Пример внутренней топологии без `ports` на хост: [`project/docker-compose.prod.example.yml`](project/docker-compose.prod.example.yml) — **только** узел Redis/RabbitMQ, не полный прод-стек; пароли укажите в `REDIS_URL` / `CELERY_BROKER_URL` в `bot_service/.env`.
+- **Redis и RabbitMQ (bot):** в `ENV=prod|production` в коде требуются **`REDIS_URL`** с **`rediss://`** и **`CELERY_BROKER_URL`** с **`amqps://`**; запрещены `guest:guest` и явное ослабление проверки TLS в URL. Узел **только во внутренней сети**, без публикации портов в интернет — см. [`project/docker-compose.prod.example.yml`](project/docker-compose.prod.example.yml): TLS, пароли; перед запуском `make tls-certs` или `python project/scripts/gen_sample_tls_certs.py` (из корня клона), затем `docker compose` из каталога `project/`.
 - **Redis: целостность данных** (опционально, рекомендуется в prod): `REDIS_INTEGRITY_SECRET` в `bot_service` — одинаковая строка в процессе webhook и в **Celery worker** (подпись `max_auth:*` и `max:outbox`). Без секрета поведение как раньше (обратная совместимость). Секрет есть у приложения: это не замена сетевой изоляции Redis.
 - **Секреты** в бою — Vault, Kubernetes Secrets или аналог облака; не класть в git.
 - **Лимит размера HTTP-тела** дублируйте на reverse proxy, например nginx: `client_max_body_size 1m;` в `server` / `location`.
@@ -591,7 +591,7 @@ User-friendly авторизация без ручного JWT вынесена 
 2. Затем отправьте **`/token `** и сразу после пробела **вставьте JWT из буфера** (в Windows обычно **Ctrl+V** в поле ввода). Итоговое сообщение: `/token <ваш_токен_одной_строкой>`.
 3. После успешной привязки токена можно писать **обычный текст** — вопрос для LLM (цепочка Celery → OpenRouter → ответ в MAX описана в списке сценария выше).
 
-Если бот не реагирует или приходит только «Запрос отправлен…» без ответа модели, проверьте: **Redis и RabbitMQ** в Docker (шаг 3, `docker compose ps`), **Celery worker** (шаг 6), **polling** локально (шаг 7), webhook у бота на стороне MAX **отключён** («Режимы MAX» ниже), токен не просрочен (повторите **шаг 9** при необходимости).
+Если бот не реагирует или приходит только «Запрос отправлен…» без ответа модели, проверьте: **Redis и RabbitMQ** в Docker (шаг 3, `docker compose -f project/docker-compose.yml -f project/docker-compose.dev-host-ports.yml ps`), **Celery worker** (шаг 6), **polling** локально (шаг 7), webhook у бота на стороне MAX **отключён** («Режимы MAX» ниже), токен не просрочен (повторите **шаг 9** при необходимости).
 
 ## Режимы MAX
 

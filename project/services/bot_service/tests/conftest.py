@@ -10,6 +10,16 @@ os.environ.setdefault(
 
 import pytest
 
+# Для тестов с ENV=production (валидация prod): не считаются реальными подключениями.
+_PROD_REDIS = "rediss://:secret@redis:6379/0"
+_PROD_BROKER = "amqps://app:secret@rabbitmq:5671//"
+
+
+@pytest.fixture
+def prod_backend_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("REDIS_URL", _PROD_REDIS)
+    monkeypatch.setenv("CELERY_BROKER_URL", _PROD_BROKER)
+
 
 @pytest.fixture(autouse=True)
 def _clear_bot_settings_cache() -> None:

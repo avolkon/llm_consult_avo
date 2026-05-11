@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     celery_broker_url: str = "amqp://guest:guest@localhost:5672//"
 
+    # PEM CA для проверки сертификата при rediss:// / amqps:// (самоподписанный CA из compose — задайте путь в контейнере).
+    redis_ssl_ca_certs: str | None = None
+    celery_broker_ca_cert: str | None = None
+
     api_host: str = "0.0.0.0"
     api_port: int = 8080
 
@@ -110,6 +114,32 @@ class Settings(BaseSettings):
             if any(low == p.lower() for p in _MAX_BOT_TOKEN_PLACEHOLDERS):
                 msg = "MAX_BOT_TOKEN must not be a placeholder value in production"
                 raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def require_tls_backends_in_production(self) -> Self:
+        if self.env not in ("prod", "production"):
+            return self
+        r = self.redis_url.strip()
+        ru = r.lower()
+        if not ru.startswith("rediss://"):
+            msg = "REDIS_URL must use rediss:// in production (TLS to Redis)"
+            raise ValueError(msg)
+        if "ssl_cert_reqs=none" in ru or "ssl_cert_reqs=cert_none" in ru:
+            msg = "Insecure Redis TLS (ssl_cert_reqs none) is not allowed in production"
+            raise ValueError(msg)
+
+        b = self.celery_broker_url.strip()
+        bl = b.lower()
+        if not bl.startswith("amqps://"):
+            msg = "CELERY_BROKER_URL must use amqps:// in production (TLS to RabbitMQ)"
+            raise ValueError(msg)
+        if "guest:guest@" in bl or "://guest:guest@" in bl:
+            msg = "CELERY_BROKER_URL must not use guest:guest in production"
+            raise ValueError(msg)
+        if any(x in bl for x in ("verify=0", "no_verify=1", "verify=false")):
+            msg = "Insecure broker TLS verification flags are not allowed in production"
+            raise ValueError(msg)
         return self
 
     @model_validator(mode="after")

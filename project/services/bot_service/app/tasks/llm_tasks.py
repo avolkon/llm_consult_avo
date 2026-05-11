@@ -27,9 +27,13 @@ _worker_redis: redis.Redis | None = None
 def _get_sync_redis() -> redis.Redis:
     global _worker_redis
     if _worker_redis is None:
+        kw: dict = {"decode_responses": True}
+        cfg = get_settings()
+        if cfg.redis_ssl_ca_certs:
+            kw["ssl_ca_certs"] = cfg.redis_ssl_ca_certs
         _worker_redis = redis.from_url(
-            get_settings().redis_url,
-            decode_responses=True,
+            cfg.redis_url,
+            **kw,
         )
     return _worker_redis
 
