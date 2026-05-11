@@ -17,7 +17,7 @@ services:
       - ./services/auth_service/.env
     ports:
       - "8000:8000"
-    command: ["poetry", "run", "auth-service"]
+    command: ["uv", "run", "auth-service"]
 
   bot-service:
     build:
@@ -29,7 +29,7 @@ services:
       - rabbitmq
     ports:
       - "8080:8080"
-    command: ["poetry", "run", "max-webhook"]
+    command: ["uv", "run", "max-webhook"]
 
   celery-worker:
     build:
@@ -39,4 +39,4 @@ services:
     depends_on:
       - redis
       - rabbitmq
-    command: ["poetry", "run", "celery-llm-worker"]
+    command: ["uv", "run", "celery-llm-worker"]

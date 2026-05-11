@@ -6,8 +6,8 @@
 ## Запуск
 
 ```bash
-poetry install
-poetry run auth-service
+uv sync
+uv run auth-service
 ```
 
 Сервис поднимается на `0.0.0.0:8000`, Swagger доступен на `/docs`.
@@ -60,7 +60,7 @@ curl -X GET http://localhost:8000/auth/me ^
 ## Тесты
 
 ```bash
-poetry run pytest -q
+uv run pytest -q
 ```
 
 ## Архитектурные границы

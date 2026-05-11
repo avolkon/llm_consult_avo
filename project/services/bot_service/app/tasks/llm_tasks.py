@@ -74,7 +74,7 @@ def llm_request(
 
 
 def run_worker_main() -> None:
-    """Poetry script entrypoint для запуска celery worker."""
+    """Точка входа скрипта (uv/pip console script) для Celery worker."""
     argv = ["worker", "--loglevel=INFO"]
     # Windows: пул prefork/multiprocessing часто даёт WinError 5 у дочерних процессов;
     # solo — один процесс, достаточно для локальной разработки.

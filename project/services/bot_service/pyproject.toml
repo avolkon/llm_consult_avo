@@ -1,37 +1,41 @@
-[tool.poetry]
+[project]
 name = "bot_service"
 version = "0.1.0"
 description = "MAX messenger bot and workers for LLM consultation system"
-authors = ["AVolkon"]
 readme = "README.md"
-packages = [{include = "app"}]
+requires-python = ">=3.11"
+authors = [{ name = "AVolkon" }]
+dependencies = [
+    "celery>=5.4.0,<6.0.0",
+    "redis>=5.2.0,<6.0.0",
+    "httpx>=0.28.0,<0.29.0",
+    "pydantic>=2.10.0,<3.0.0",
+    "pydantic-settings>=2.6.0,<3.0.0",
+    "python-jose>=3.3.0,<4.0.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+    "maxapi[fastapi]>=1.0.0,<2.0.0",
+    "uvicorn>=0.46.0,<0.47.0",
+    "fastapi>=0.136.1,<0.137.0",
+]
 
-[tool.poetry.scripts]
+[project.scripts]
 bot-service = "app.main:main"
 max-webhook = "app.main:run_webhook_server"
 max-poll = "app.poll:run_polling"
 celery-llm-worker = "app.tasks.llm_tasks:run_worker_main"
 
-[tool.poetry.dependencies]
-python = "^3.11"
-celery = "^5.4.0"
-redis = "^5.2.0"
-httpx = "^0.28.0"
-pydantic = "^2.10.0"
-pydantic-settings = "^2.6.0"
-python-jose = "^3.3.0"
-python-dotenv = "^1.0.0"
-maxapi = {version = "^1.0", extras = ["fastapi"]}
-uvicorn = "^0.46.0"
-fastapi = "^0.136.1"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.0"
-pytest-asyncio = "^0.24.0"
-ruff = "^0.8.0"
-fakeredis = "^2.35.1"
-respx = "^0.23.1"
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0,<9.0.0",
+    "pytest-asyncio>=0.24.0,<0.25.0",
+    "ruff>=0.8.0,<0.9.0",
+    "fakeredis>=2.35.1,<3.0.0",
+    "respx>=0.23.1,<0.24.0",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

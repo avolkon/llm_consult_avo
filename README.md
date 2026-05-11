@@ -6,6 +6,10 @@
 
 В финальной учебной реализации выбран мессенджер **MAX** и библиотека **maxapi**: так зафиксирован стек проекта (long polling / webhook, исходящие сообщения, идентификаторы чата и пользователя). С точки зрения **архитектуры** это тот же класс задач, что и у Telegram-бота: события из мессенджера, привязка сессии к **идентификатору пользователя/чата**, очередь задач к LLM и доставка ответа обратно в диалог. Требования методички про «бота» и скриншоты переписки **корректно отражаются в MAX**; где в формулировках явно указан Telegram, однако, в связи с тем, что Telegram блокируется на территории РФ, это потребовало замены канала на MAX без изменения логики Auth Service, JWT и асинхронной цепочки Celery.
 
+Также в отличие от исходного ТЗ изменена модель из Openrouter
+в проекте применяется qwen/qwen3.5-flash-02-23
+в связи с тем, что указанная в исходном ТЗ бесплатная модель недоступна
+
 ## Структура проекта
 
 Срез репозитория (без локальных `.venv`, `__pycache__`, `.pytest_cache`, `.ruff_cache`, `auth.db`, рабочих `.env`):
@@ -34,7 +38,7 @@ llm_consult_avo/
 │       │   ├── tests/
 │       │   ├── Dockerfile
 │       │   ├── pyproject.toml
-│       │   ├── poetry.lock
+│       │   ├── uv.lock
 │       │   ├── pytest.ini
 │       │   ├── .env.example
 │       │   └── README.md
@@ -52,7 +56,7 @@ llm_consult_avo/
 │           ├── tests/
 │           ├── Dockerfile
 │           ├── pyproject.toml
-│           ├── poetry.lock
+│           ├── uv.lock
 │           ├── pytest.ini
 │           ├── .env.example
 │           └── README.md
@@ -71,7 +75,7 @@ llm_consult_avo/
 | Команда | Действие |
 |---------|----------|
 | make install | Установить зависимости для обоих сервисов |
-| make run-auth | Запустить auth_service (Poetry) |
+| make run-auth | Запустить auth_service (uv) |
 | make run-bot  | bot_service |
 | make run-max-poll | Long polling MAX (dev) |
 | make run-max-webhook | FastAPI + `/health` + webhook MAX |
@@ -89,9 +93,9 @@ llm_consult_avo/
 
 ### Пошаговая проверка окружения (корень клона и Docker)
 
-Последовательность: **шаг 1** — Poetry; **шаг 2** — pytest; **шаг 3** — Redis и RabbitMQ в Docker; **шаг 4** — запуск `auth_service`; **шаг 5** — `GET /health`; **шаг 6** — Celery worker; **шаг 7** — `max-poll` (см. «Режимы MAX»); **шаг 8** — `POST /auth/register`; **шаг 9** — JWT в буфер (`POST /auth/login` → `access_token`); **шаг 10** — `GET /auth/me` с JWT из буфера (опционально; см. подсказку про перезапись буфера).
+Последовательность: **шаг 1** — uv (`uv sync` в обоих сервисах); **шаг 2** — pytest; **шаг 3** — Redis и RabbitMQ в Docker; **шаг 4** — запуск `auth_service`; **шаг 5** — `GET /health`; **шаг 6** — Celery worker; **шаг 7** — `max-poll` (см. «Режимы MAX»); **шаг 8** — `POST /auth/register`; **шаг 9** — JWT в буфер (`POST /auth/login` → `access_token`); **шаг 10** — `GET /auth/me` с JWT из буфера (опционально; см. подсказку про перезапись буфера).
 
-**До диалога с ботом в MAX:** контейнеры **шага 3** (`docker compose up -d redis rabbitmq`) должны быть **запущены и оставаться работать**, иначе бот и воркер не достучатся до Redis/RabbitMQ. Без **шага 6** (`poetry run celery-llm-worker`) ответ модели **не появится**: после текста пользователю может прийти только «Запрос отправлен, ответ появится в этом чате», пока очередь в RabbitMQ не обработана.
+**До диалога с ботом в MAX:** контейнеры **шага 3** (`docker compose up -d redis rabbitmq`) должны быть **запущены и оставаться работать**, иначе бот и воркер не достучатся до Redis/RabbitMQ. Без **шага 6** (`uv run celery-llm-worker`) ответ модели **не появится**: после текста пользователю может прийти только «Запрос отправлен, ответ появится в этом чате», пока очередь в RabbitMQ не обработана.
 
 **Корень клона** — каталог `llm_consult_avo`, в нём лежат `Makefile` и папка `project/`. В блоках ниже **первая строка** переводит в каталог клона (Windows) или в ожидаемое расположение клона под `Documents/GitHub` (macOS/Linux). Если ваш клон в другом месте — замените только эту первую строку.
 
@@ -106,7 +110,7 @@ llm_consult_avo/
 
 | Шаг | Содержание |
 |-----|------------|
-| [1](#step-1) | Poetry: `auth_service` + `bot_service` |
+| [1](#step-1) | uv: `auth_service` + `bot_service` (`uv sync`) |
 | [2](#step-2) | Pytest обоих сервисов |
 | [3](#step-3) | Docker: Redis и RabbitMQ |
 | [4](#step-4) | Запуск `auth_service` |
@@ -126,26 +130,26 @@ llm_consult_avo/
 ```powershell
 $R = "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
 
-# Шаг 1 — Poetry
-Set-Location "$R"; Set-Location "project\services\auth_service"; poetry install; Set-Location "..\bot_service"; poetry install; Set-Location "..\..\.."
+# Шаг 1 — uv
+Set-Location "$R"; Set-Location "project\services\auth_service"; uv sync; Set-Location "..\bot_service"; uv sync; Set-Location "..\..\.."
 
 # Шаг 2 — pytest
-Set-Location "$R"; Set-Location "project\services\auth_service"; poetry run pytest; Set-Location "..\bot_service"; poetry run pytest; Set-Location "..\..\.."
+Set-Location "$R"; Set-Location "project\services\auth_service"; uv run pytest; Set-Location "..\bot_service"; uv run pytest; Set-Location "..\..\.."
 
 # Шаг 3 — Redis + RabbitMQ
 Set-Location "$R"; Set-Location "project"; docker compose up -d redis rabbitmq; Set-Location ".."
 
 # Шаг 4 — auth_service (терминал занят до Ctrl+C)
-Set-Location "$R\project\services\auth_service"; poetry run auth-service
+Set-Location "$R\project\services\auth_service"; uv run auth-service
 
 # Шаг 5 — health (новый терминал, auth из шага 4 должен слушать :8000)
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/health" -Method Get
 
 # Шаг 6 — Celery worker (новый терминал)
-Set-Location "$R\project\services\bot_service"; poetry run celery-llm-worker
+Set-Location "$R\project\services\bot_service"; uv run celery-llm-worker
 
 # Шаг 7 — max-poll (ещё один терминал)
-Set-Location "$R\project\services\bot_service"; poetry run max-poll
+Set-Location "$R\project\services\bot_service"; uv run max-poll
 
 # Шаг 8 — регистрация (email/пароль замените при необходимости)
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/register" -Method Post -ContentType "application/json" -Body '{"email":"readme-demo@example.com","password":"secret123"}'
@@ -160,7 +164,7 @@ $token | Set-Clipboard   # вставить в MAX после /token
 
 <a id="step-1"></a>
 
-### Шаг 1: установка зависимостей Poetry (без `make`)
+### Шаг 1: установка зависимостей через uv (без `make`)
 
 Эквивалент `make install`. В конце вы снова окажетесь в корне клона.
 
@@ -168,21 +172,21 @@ $token | Set-Clipboard   # вставить в MAX после /token
 
 ```powershell
 Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
-Set-Location "project\services\auth_service"; poetry install; Set-Location "..\bot_service"; poetry install; Set-Location "..\..\.."
+Set-Location "project\services\auth_service"; uv sync; Set-Location "..\bot_service"; uv sync; Set-Location "..\..\.."
 ```
 
 **macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените первую строку.
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
-cd project/services/auth_service && poetry install && cd ../bot_service && poetry install && cd ../../..
+cd project/services/auth_service && uv sync && cd ../bot_service && uv sync && cd ../../..
 ```
 
 **Linux (bash)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените первую строку.
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
-cd project/services/auth_service && poetry install && cd ../bot_service && poetry install && cd ../../..
+cd project/services/auth_service && uv sync && cd ../bot_service && uv sync && cd ../../..
 ```
 
 ---
@@ -197,21 +201,21 @@ cd project/services/auth_service && poetry install && cd ../bot_service && poetr
 
 ```powershell
 Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
-Set-Location "project\services\auth_service"; poetry run pytest; Set-Location "..\bot_service"; poetry run pytest; Set-Location "..\..\.."
+Set-Location "project\services\auth_service"; uv run pytest; Set-Location "..\bot_service"; uv run pytest; Set-Location "..\..\.."
 ```
 
 **macOS (Terminal, bash/zsh)**
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
-cd project/services/auth_service && poetry run pytest && cd ../bot_service && poetry run pytest && cd ../../..
+cd project/services/auth_service && uv run pytest && cd ../bot_service && uv run pytest && cd ../../..
 ```
 
 **Linux (bash)**
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
-cd project/services/auth_service && poetry run pytest && cd ../bot_service && poetry run pytest && cd ../../..
+cd project/services/auth_service && uv run pytest && cd ../bot_service && uv run pytest && cd ../../..
 ```
 
 ---
@@ -251,7 +255,7 @@ cd project && docker compose up -d redis rabbitmq && cd ..
 
 <a id="step-4"></a>
 
-### Шаг 4: запуск `auth_service` (Poetry)
+### Шаг 4: запуск `auth_service` (uv)
 
 **Перед запуском:** выполнены шаги 1–3; файл `project/services/auth_service/.env` создан и заполнен по образцу `project/services/auth_service/.env.example` (секреты не коммитьте).
 
@@ -263,21 +267,21 @@ cd project && docker compose up -d redis rabbitmq && cd ..
 
 ```powershell
 Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo\project\services\auth_service"
-poetry run auth-service
+uv run auth-service
 ```
 
 **macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените `cd`.
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/auth_service"
-poetry run auth-service
+uv run auth-service
 ```
 
 **Linux (bash)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените `cd`.
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/auth_service"
-poetry run auth-service
+uv run auth-service
 ```
 
 **Swagger (`/docs`):** `http://127.0.0.1:8000/docs` — окно с этим процессом занято; откройте URL в браузере вручную или в **другом** терминале: Windows `Start-Process "http://127.0.0.1:8000/docs"`; macOS `open "http://127.0.0.1:8000/docs"`; Linux `xdg-open "http://127.0.0.1:8000/docs"`.
@@ -331,21 +335,21 @@ curl -sS "http://127.0.0.1:8000/health"
 
 ```powershell
 Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo\project\services\bot_service"
-poetry run celery-llm-worker
+uv run celery-llm-worker
 ```
 
 **macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените `cd`.
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/bot_service"
-poetry run celery-llm-worker
+uv run celery-llm-worker
 ```
 
 **Linux (bash)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените `cd`.
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/bot_service"
-poetry run celery-llm-worker
+uv run celery-llm-worker
 ```
 
 ---
@@ -364,21 +368,21 @@ poetry run celery-llm-worker
 
 ```powershell
 Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo\project\services\bot_service"
-poetry run max-poll
+uv run max-poll
 ```
 
 **macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените `cd`.
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/bot_service"
-poetry run max-poll
+uv run max-poll
 ```
 
 **Linux (bash)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените `cd`.
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/bot_service"
-poetry run max-poll
+uv run max-poll
 ```
 
 Эквивалент из корня клона: `make run-max-poll` (нужен `make`).
@@ -571,13 +575,13 @@ Polling и webhook нельзя использовать одновременн�
 Требования
 Python 3.11+
 
-Poetry (установлен глобально)
+**uv** ([установка](https://docs.astral.sh/uv/getting-started/installation/); доступен в `PATH`)
 
 Git
 
 Статус
 ✅ Базовый скелет проекта создан
-✅ Poetry настроен для обоих сервисов
+✅ uv настроен для обоих сервисов (`pyproject.toml`, `uv.lock`)
 ✅ Makefile готов к работе
 ✅ Эпик 1 (Auth Service): реализован
 ✅ Эпик 2 (Bot Core): реализован

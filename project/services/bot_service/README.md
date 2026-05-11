@@ -25,10 +25,10 @@
 
 | Команда | Назначение |
 |---------|------------|
-| `poetry run bot-service` | запуск webhook сервера |
-| `poetry run max-poll` | long polling (dev; webhook в MAX должен быть отключён) |
-| `poetry run max-webhook` | FastAPI + `/health` + приём webhook на `WEBHOOK_PATH` |
-| `poetry run celery-llm-worker` | запуск Celery worker для `llm_request` |
+| `uv run bot-service` | запуск webhook сервера |
+| `uv run max-poll` | long polling (dev; webhook в MAX должен быть отключён) |
+| `uv run max-webhook` | FastAPI + `/health` + приём webhook на `WEBHOOK_PATH` |
+| `uv run celery-llm-worker` | запуск Celery worker для `llm_request` |
 
 ## Поток обработки
 
