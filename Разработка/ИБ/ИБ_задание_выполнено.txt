@@ -4,7 +4,7 @@
 ================================================================================
 
 P0-1  Изоляция Redis/RabbitMQ
-      → project/docker-compose.prod.example.yml; README (раздел Production).
+      → `project/docker-compose.yml` (профиль prod-broker-tls); README (раздел Production).
 P0-2  Webhook MAX
       → Разработка/ИБ/ИБ_webhook_MAX_доверие.txt; README ссылка.
 P0-3  Секреты не логируются

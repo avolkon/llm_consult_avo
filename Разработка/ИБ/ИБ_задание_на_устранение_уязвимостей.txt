@@ -23,8 +23,8 @@
   Источник: аудит2 п.1; чек-лист «Сеть и инфраструктура».
   Суть: Брокер Celery и Redis не должны быть доступны анонимно из интернета.
   Работы:
-    [ ] В project/docker-compose.yml (и/или отдельном compose.prod.yml): не
-        публиковать порты redis/rabbitmq наружу в production-профиле; документировать.
+    [ ] В project/docker-compose.yml (профиль prod-broker-tls для TLS-брокеров): не
+        публиковать порты redis/rabbitmq наружу в production-примере; документировать.
     [ ] Заменить guest:guest на переменные окружения с сильными паролями в примерах
         для non-dev; описать в README раздел «Production».
     [ ] По возможности: Redis ACL или requirepass; RabbitMQ отдельный vhost/user.

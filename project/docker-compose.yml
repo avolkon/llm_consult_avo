@@ -1,9 +1,52 @@
+# Dev (по умолчанию): redis, rabbitmq без TLS; порты брокеров на хост не публикуются.
+# Порты 6379/5672/15672 на localhost — overlay Разработка/ИБ/docker-compose.dev-host-ports.yml (см. README).
+#
+# Пример prod-брокеров (TLS, пароли, только сеть backend, без ports на хост) — профиль prod-broker-tls:
+#   из корня: make tls-certs
+#   export REDIS_PASSWORD=... RABBITMQ_PASSWORD=...   # обязательно смените в бою (не placeholder из compose)
+#   cd project && docker compose --profile prod-broker-tls up -d redis-tls rabbitmq-tls
+# В bot_service (.env) для этого примера (ENV=prod):
+#   REDIS_URL=rediss://:${REDIS_PASSWORD}@redis-tls:6379/0
+#   CELERY_BROKER_URL=amqps://${RABBITMQ_USER:-app}:${RABBITMQ_PASSWORD}@rabbitmq-tls:5671//
+#   REDIS_SSL_CA_CERTS=/run/tls/ca.crt
+#   CELERY_BROKER_CA_CERT=/run/tls/ca.crt
+# Переменные REDIS_PASSWORD / RABBITMQ_PASSWORD для профиля prod-broker-tls задавайте в окружении;
+# подстановки по умолчанию ниже нужны только тому, чтобы `docker compose` парсил файл без них при обычном dev-запуске.
+# В бою для TLS-брокеров используйте сильные секреты (не значения по умолчанию).
+
 services:
   redis:
     image: redis:7-alpine
 
   rabbitmq:
     image: rabbitmq:3-management
+
+  redis-tls:
+    profiles: [prod-broker-tls]
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --tls-port 6379
+      --port 0
+      --tls-cert-file /etc/tls/server.crt
+      --tls-key-file /etc/tls/server.key
+      --tls-ca-cert-file /etc/tls/ca.crt
+      --tls-auth-clients optional
+      --requirepass ${REDIS_PASSWORD:-compose-placeholder-redis-not-for-prod}
+    volumes:
+      - ./tls:/etc/tls:ro
+    networks: [backend]
+
+  rabbitmq-tls:
+    profiles: [prod-broker-tls]
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-app}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-compose-placeholder-rabbit-not-for-prod}
+    volumes:
+      - ./tls:/etc/tls:ro
+      - ./docker/rabbitmq/rabbitmq_tls.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    networks: [backend]
 
   auth-service:
     build:
@@ -35,3 +78,7 @@ services:
       - redis
       - rabbitmq
     command: ["uv", "run", "celery-llm-worker"]
+
+networks:
+  backend:
+    driver: bridge

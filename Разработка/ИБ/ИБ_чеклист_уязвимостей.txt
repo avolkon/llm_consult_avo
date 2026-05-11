@@ -16,7 +16,7 @@
     Доказательство: в репозитории нет регламентов/контактов ИБ по ротации (только общие рекомендации README).
 
 [x] Пароли Redis/AMQP в production не default (guest и т.п.) — как эталон infra
-    Доказательство: `project/docker-compose.prod.example.yml` — `requirepass` у Redis, пользователь/пароль RabbitMQ не guest; в `bot_service` при `ENV=prod` URL брокера с `guest:guest` запрещён в `app/core/config.py`.
+    Доказательство: `project/docker-compose.yml`, профиль `prod-broker-tls` (сервисы `redis-tls`, `rabbitmq-tls`) — `requirepass` у Redis, пользователь/пароль RabbitMQ не guest; в `bot_service` при `ENV=prod` URL брокера с `guest:guest` запрещён в `app/core/config.py`.
 [!] Пароли в реальной среде заказчика не default
     Доказательство: локальный `docker-compose.yml` и `.env.example` допускают guest для dev — боевые URL должен задать заказчик.
 
@@ -27,15 +27,15 @@
 
 --- Сеть и инфраструктура ---
 [x] Redis и RabbitMQ недоступны из интернета — в эталонном prod-compose
-    Доказательство: `project/docker-compose.prod.example.yml` — сервисы только в сети `backend`, секции `ports` для redis/rabbitmq отсутствуют.
+    Доказательство: `project/docker-compose.yml`, профиль `prod-broker-tls` — сервисы только в сети `backend`, секции `ports` у TLS-брокеров отсутствуют.
 [!] Redis и RabbitMQ в интернет не выставлены на стороне заказчика
     Доказательство: фактическая VPC/SG/маршрутизация не контролируется репозиторием.
 
 [x] На хосте не торчат 6379/5672/15672 наружу — по умолчанию в dev-compose
-    Доказательство: `project/docker-compose.yml` без `ports` у redis/rabbitmq; опционально локально — `docker-compose.dev-host-ports.yml` (README шаг 3).
+    Доказательство: `project/docker-compose.yml` без `ports` у redis/rabbitmq; опционально локально — `Разработка/ИБ/docker-compose.dev-host-ports.yml` (README шаг 3).
 
 [x] TLS для Redis/AMQP включён там, где требует политика — в коде prod бота
-    Доказательство: при `ENV=prod|production` обязательны `rediss://` и `amqps://` (`bot_service/app/core/config.py`); пример TLS-узла — `docker-compose.prod.example.yml`, скрипт `project/scripts/gen_sample_tls_certs.py`, `make tls-certs`.
+    Доказательство: при `ENV=prod|production` обязательны `rediss://` и `amqps://` (`bot_service/app/core/config.py`); пример TLS-узла — `project/docker-compose.yml` (профиль `prod-broker-tls`), скрипт `project/scripts/gen_sample_tls_certs.py`, `make tls-certs`.
 
 [x] Reverse proxy: лимит размера тела — в приложениях
     Доказательство: middleware по `Content-Length` в `auth_service/app/main.py`, `bot_service/app/main.py`; README рекомендует дублировать на nginx.

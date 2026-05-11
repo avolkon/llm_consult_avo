@@ -1,0 +1,19 @@
+# Публикация Redis/RabbitMQ на localhost для инструментов на хосте (redis-cli, браузер 15672).
+# Документ ИБ: опциональный overlay; базовый `project/docker-compose.yml` брокеры на хост не выставляет.
+#
+# Из каталога project/:
+#   docker compose -f docker-compose.yml -f ../Разработка/ИБ/docker-compose.dev-host-ports.yml up -d redis rabbitmq
+# Из корня репозитория:
+#   docker compose -f project/docker-compose.yml -f Разработка/ИБ/docker-compose.dev-host-ports.yml up -d redis rabbitmq
+#
+# В production такой overlay не используйте: брокеры только во внутренней сети.
+
+services:
+  redis:
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    ports:
+      - "5672:5672"
+      - "15672:15672"

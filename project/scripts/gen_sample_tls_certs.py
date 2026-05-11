@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Генерация самоподписанного CA и сервера (SAN: redis, rabbitmq) для docker-compose.prod.example.
+"""Генерация самоподписанного CA и сервера (SAN: redis-tls, rabbitmq-tls) для Docker Compose.
 
 Требуется openssl в PATH. Запуск из корня репозитория:
   python project/scripts/gen_sample_tls_certs.py
@@ -39,7 +39,7 @@ def main() -> None:
     ext = tls / "server.ext"
 
     ext.write_text(
-        "subjectAltName=DNS:redis,DNS:rabbitmq\n",
+        "subjectAltName=DNS:redis-tls,DNS:rabbitmq-tls\n",
         encoding="utf-8",
     )
 
@@ -77,7 +77,7 @@ def main() -> None:
             "-out",
             str(srv_csr),
             "-subj",
-            "/CN=redis",
+            "/CN=redis-tls",
         ],
         cwd=tls,
     )

@@ -19,7 +19,7 @@ llm_consult_avo/
 ├── .cursor/
 │   └── rules/                 # правила Cursor (секреты, пошаговый README, git …)
 ├── project/
-│   ├── docker-compose.yml     # Redis, RabbitMQ, образы auth/bot/celery (см. compose)
+│   ├── docker-compose.yml     # dev-брокеры + приложения; профиль prod-broker-tls — TLS redis-tls/rabbitmq-tls
 │   ├── .env.auth.example
 │   ├── .env.bot.example
 │   ├── scripts/               # вспомогательные скрипты (в т.ч. проверка env для compose)
@@ -61,7 +61,7 @@ llm_consult_avo/
 │           ├── .env.example
 │           └── README.md
 ├── screenshots/               # скриншоты для отчёта: swagger, max_bot, RabbitMQ, tests
-├── Разработка/                # Arch.txt, ИБ/, эпики, бэклог (DevRules — локально, см. .gitignore)
+├── Разработка/                # Arch.txt, ИБ/ (в т.ч. docker-compose.dev-host-ports.yml), эпики, бэклог (DevRules — локально, см. .gitignore)
 ├── Makefile
 ├── README.md
 ├── LICENSE
@@ -137,7 +137,7 @@ Set-Location "$R"; Set-Location "project\services\auth_service"; uv sync; Set-Lo
 Set-Location "$R"; Set-Location "project\services\auth_service"; uv run pytest; Set-Location "..\bot_service"; uv run pytest; Set-Location "..\..\.."
 
 # Шаг 3 — Redis + RabbitMQ
-Set-Location "$R"; Set-Location "project"; docker compose -f docker-compose.yml -f docker-compose.dev-host-ports.yml up -d redis rabbitmq; Set-Location ".."
+Set-Location "$R"; Set-Location "project"; docker compose -f docker-compose.yml -f ../Разработка/ИБ/docker-compose.dev-host-ports.yml up -d redis rabbitmq; Set-Location ".."
 
 # Шаг 4 — auth_service (терминал занят до Ctrl+C)
 Set-Location "$R\project\services\auth_service"; uv run auth-service
@@ -224,7 +224,7 @@ cd project/services/auth_service && uv run pytest && cd ../bot_service && uv run
 
 ### Шаг 3: Redis и RabbitMQ через Docker Compose
 
-Поднимаются только сервисы `redis` и `rabbitmq` из `project/docker-compose.yml`. Базовый файл **не публикует** порты на хост (узлы доступны только другим контейнерам в сети Compose). Для разработки на хосте с `localhost:6379` / `localhost:15672` подключайте второй файл **`docker-compose.dev-host-ports.yml`** (как в командах ниже).
+Поднимаются только сервисы `redis` и `rabbitmq` из `project/docker-compose.yml`. Базовый файл **не публикует** порты на хост (узлы доступны только другим контейнерам в сети Compose). Для разработки на хосте с `localhost:6379` / `localhost:15672` подключайте overlay **[`Разработка/ИБ/docker-compose.dev-host-ports.yml`](Разработка/ИБ/docker-compose.dev-host-ports.yml)** (как в командах ниже).
 
 Перед запуском: **Windows и macOS — Docker Desktop уже запущен**; **Linux — работает `docker`** (см. блок «Docker» выше).
 
@@ -232,24 +232,24 @@ cd project/services/auth_service && uv run pytest && cd ../bot_service && uv run
 
 ```powershell
 Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
-Set-Location "project"; docker compose -f docker-compose.yml -f docker-compose.dev-host-ports.yml up -d redis rabbitmq; Set-Location ".."
+Set-Location "project"; docker compose -f docker-compose.yml -f ../Разработка/ИБ/docker-compose.dev-host-ports.yml up -d redis rabbitmq; Set-Location ".."
 ```
 
 **macOS (Terminal, bash/zsh)**
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
-cd project && docker compose -f docker-compose.yml -f docker-compose.dev-host-ports.yml up -d redis rabbitmq && cd ..
+cd project && docker compose -f docker-compose.yml -f ../Разработка/ИБ/docker-compose.dev-host-ports.yml up -d redis rabbitmq && cd ..
 ```
 
 **Linux (bash)**
 
 ```bash
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
-cd project && docker compose -f docker-compose.yml -f docker-compose.dev-host-ports.yml up -d redis rabbitmq && cd ..
+cd project && docker compose -f docker-compose.yml -f ../Разработка/ИБ/docker-compose.dev-host-ports.yml up -d redis rabbitmq && cd ..
 ```
 
-Проверка (из корня клона, опционально): `docker compose -f project/docker-compose.yml -f project/docker-compose.dev-host-ports.yml ps` — у `redis` и `rabbitmq` должен быть статус `running` / `Up`. Управление RabbitMQ в браузере: [http://localhost:15672](http://localhost:15672) (логин/пароль по умолчанию у образа — часто `guest` / `guest`, если вы их не меняли в Compose; **порты на хост** подключает только `docker-compose.dev-host-ports.yml`).
+Проверка (из корня клона, опционально): `docker compose -f project/docker-compose.yml -f Разработка/ИБ/docker-compose.dev-host-ports.yml ps` — у `redis` и `rabbitmq` должен быть статус `running` / `Up`. Управление RabbitMQ в браузере: [http://localhost:15672](http://localhost:15672) (логин/пароль по умолчанию у образа — часто `guest` / `guest`, если вы их не меняли в Compose; **порты на хост** подключает только overlay [`Разработка/ИБ/docker-compose.dev-host-ports.yml`](Разработка/ИБ/docker-compose.dev-host-ports.yml)).
 
 ---
 
@@ -523,7 +523,7 @@ env-файлы сервисов: `project/services/auth_service/.env` и
 
 ## Production и безопасность (ИБ)
 
-- **Redis и RabbitMQ (bot):** в `ENV=prod|production` в коде требуются **`REDIS_URL`** с **`rediss://`** и **`CELERY_BROKER_URL`** с **`amqps://`**; запрещены `guest:guest` и явное ослабление проверки TLS в URL. Узел **только во внутренней сети**, без публикации портов в интернет — см. [`project/docker-compose.prod.example.yml`](project/docker-compose.prod.example.yml): TLS, пароли; перед запуском `make tls-certs` или `python project/scripts/gen_sample_tls_certs.py` (из корня клона), затем `docker compose` из каталога `project/`.
+- **Redis и RabbitMQ (bot):** в `ENV=prod|production` в коде требуются **`REDIS_URL`** с **`rediss://`** и **`CELERY_BROKER_URL`** с **`amqps://`**; запрещены `guest:guest` и явное ослабление проверки TLS в URL. Узел **только во внутренней сети**, без публикации портов в интернет. Эталон TLS-брокеров в репозитории: сервисы **`redis-tls`** и **`rabbitmq-tls`** в [`project/docker-compose.yml`](project/docker-compose.yml) (профиль **`prod-broker-tls`**): `docker compose --profile prod-broker-tls up -d redis-tls rabbitmq-tls` из каталога `project/` после `make tls-certs` или `python project/scripts/gen_sample_tls_certs.py` (из корня клона). Задайте **`REDIS_PASSWORD`** и **`RABBITMQ_PASSWORD`** в окружении (в бою — сильные секреты; в файле есть только подстановки для парсинга compose при обычном dev без этих переменных). В `.env` бота для этого примера хосты **`redis-tls`** и **`rabbitmq-tls`** (порт AMQP TLS **5671**).
 - **Redis: целостность данных** (опционально, рекомендуется в prod): `REDIS_INTEGRITY_SECRET` в `bot_service` — одинаковая строка в процессе webhook и в **Celery worker** (подпись `max_auth:*` и `max:outbox`). Без секрета поведение как раньше (обратная совместимость). Секрет есть у приложения: это не замена сетевой изоляции Redis.
 - **Секреты** в бою — Vault, Kubernetes Secrets или аналог облака; не класть в git.
 - **Лимит размера HTTP-тела** дублируйте на reverse proxy, например nginx: `client_max_body_size 1m;` в `server` / `location`.
@@ -550,7 +550,7 @@ make audit
 
 ### Чек-лист и отчёты ИБ
 
-Папка [`Разработка/ИБ/`](Разработка/ИБ/): чек-лист, аудиты, отчёт о выполнении задания.
+Папка [`Разработка/ИБ/`](Разработка/ИБ/): чек-лист, аудиты, отчёт о выполнении задания; опциональный overlay Docker Compose для портов брокеров на localhost — [`docker-compose.dev-host-ports.yml`](Разработка/ИБ/docker-compose.dev-host-ports.yml).
 
 ## Пользовательский flow проверки
 
@@ -591,7 +591,7 @@ User-friendly авторизация без ручного JWT вынесена 
 2. Затем отправьте **`/token `** и сразу после пробела **вставьте JWT из буфера** (в Windows обычно **Ctrl+V** в поле ввода). Итоговое сообщение: `/token <ваш_токен_одной_строкой>`.
 3. После успешной привязки токена можно писать **обычный текст** — вопрос для LLM (цепочка Celery → OpenRouter → ответ в MAX описана в списке сценария выше).
 
-Если бот не реагирует или приходит только «Запрос отправлен…» без ответа модели, проверьте: **Redis и RabbitMQ** в Docker (шаг 3, `docker compose -f project/docker-compose.yml -f project/docker-compose.dev-host-ports.yml ps`), **Celery worker** (шаг 6), **polling** локально (шаг 7), webhook у бота на стороне MAX **отключён** («Режимы MAX» ниже), токен не просрочен (повторите **шаг 9** при необходимости).
+Если бот не реагирует или приходит только «Запрос отправлен…» без ответа модели, проверьте: **Redis и RabbitMQ** в Docker (шаг 3, `docker compose -f project/docker-compose.yml -f Разработка/ИБ/docker-compose.dev-host-ports.yml ps`), **Celery worker** (шаг 6), **polling** локально (шаг 7), webhook у бота на стороне MAX **отключён** («Режимы MAX» ниже), токен не просрочен (повторите **шаг 9** при необходимости).
 
 ## Режимы MAX
 
