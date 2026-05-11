@@ -16,8 +16,7 @@
 
 ```
 llm_consult_avo/
-├── .cursor/
-│   └── rules/                 # правила Cursor (секреты, пошаговый README, git …)
+├── .cursor/                   # только на машине разработчика (Cursor IDE); в git не входит
 ├── project/
 │   ├── docker-compose.yml     # dev-брокеры + приложения; профиль prod-broker-tls — TLS redis-tls/rabbitmq-tls
 │   ├── .env.auth.example

@@ -212,12 +212,10 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Cursor: локальное состояние IDE вне git; правила агента версионируем в .cursor/rules/
-/.cursor/*
-!/.cursor/rules/
-!/.cursor/rules/**
+# Cursor IDE — только локально, не коммитить
+.cursor/
 
-# Локальные правила агента (человекочитаемое резюме); в git — .cursor/rules/*.mdc
+# Локальные заметки разработки (по желанию вне git)
 /Разработка/DevRules.md
 
 # Windows (метаданные папок)
