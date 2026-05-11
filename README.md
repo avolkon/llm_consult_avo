@@ -68,6 +68,55 @@ llm_consult_avo/
 └── .gitignore
 ```
 
+## Документация и демонстрация работы (критерии приёмки)
+
+Ниже зафиксированы **архитектура**, **назначение сервисов**, **сквозной сценарий** и **скриншоты**, ожидаемые при приёмке: Swagger **Auth Service** (регистрация, логин, `/auth/me`), интерфейс **бота** (в задании указан Telegram — в репозитории реализован эквивалентный сценарий в **мессенджере MAX**, см. раздел «Почему MAX вместо Telegram» выше), **RabbitMQ**, успешный **pytest**. В примерах команд регистрации используется email в форме **фамилия@домен** (`ivanov@email.com`).
+
+### Архитектура и назначение сервисов
+
+| Компонент | Назначение |
+|-----------|------------|
+| **auth_service** (FastAPI, порт **8000**) | Регистрация, логин, JWT, `GET /auth/me`, Swagger `/docs` |
+| **bot_service** | События MAX (polling/webhook), проверка JWT, постановка **`llm_request`** в Celery, доставка ответов в чат через Redis **outbox** |
+| **Redis** | Состояние сессии бота (`max_auth:*`, `user_chat:*`), список исходящих **`max:outbox`** |
+| **RabbitMQ** | Очередь **`llm`** для Celery worker |
+| **Celery worker** | Вызов OpenRouter, запись текста ответа в outbox |
+
+**Сценарий работы (end-to-end):** регистрация и логин в **auth_service** → передача JWT боту командой **`/token`** → пользовательский текст в MAX → **bot_service** ставит задачу в **RabbitMQ** → worker обращается к **OpenRouter** → ответ попадает в **Redis** и уходит в MAX (подробнее: [«Пользовательский flow проверки»](#user-flow-check)).
+
+### Скриншоты: Swagger Auth Service
+
+Ответы **Swagger UI** при демонстрации **регистрации**, **логина**, **авторизации** и вызова **`GET /auth/me`**:
+
+![Регистрация — ответ API в Swagger](screenshots/swagger/swagger_auth_01_register_response.png)
+
+![Логин — ответ с access_token](screenshots/swagger/swagger_auth_02_login_response.png)
+
+![Авторизация OAuth2 в Swagger](screenshots/swagger/swagger_auth_03_oauth2_authorized.png)
+
+![GET /auth/me — данные пользователя по JWT](screenshots/swagger/swagger_auth_04_me_response.png)
+
+### Скриншоты: чат-бот (мессенджер MAX)
+
+Требование зачёта про **Telegram**-бота на уровне сценария закрыт **MAX**-ботом (см. вступление README). Примеры экранов переписки:
+
+![MAX — диалог, статусы и дублирующееся сообщение (дедупликация)](screenshots/max_bot/max_bot_01_chat_duplicate_status.png)
+
+![MAX — диалог, несколько ответов](screenshots/max_bot/max_bot_02_chat_triple_reply.png)
+
+### Скриншоты: RabbitMQ (работа очередей)
+
+Подтверждение работы брокера и очередей при обработке задач Celery:
+
+![RabbitMQ — overview](screenshots/RabbitMQ/rabbitmq_ui_01_overview_2unacked.png)
+
+![RabbitMQ — overview, сообщения](screenshots/RabbitMQ/rabbitmq_ui_02_overview_1unacked.png)
+
+![RabbitMQ — channels](screenshots/RabbitMQ/rabbitmq_ui_03_channels.png)
+
+### Скриншоты: успешное тестирование
+
+![pytest — auth_service и bot_service](screenshots/tests/pytest_auth_and_bot_services_passed.png)
 
 ## Команды Makefile (запуск из корня)
 
@@ -151,10 +200,10 @@ Set-Location "$R\project\services\bot_service"; uv run celery-llm-worker
 Set-Location "$R\project\services\bot_service"; uv run max-poll
 
 # Шаг 8 — регистрация (email/пароль замените при необходимости)
-Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/register" -Method Post -ContentType "application/json" -Body '{"email":"readme-demo@example.com","password":"ValidP@ss1"}'
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/register" -Method Post -ContentType "application/json" -Body '{"email":"ivanov@email.com","password":"ValidP@ss1"}'
 
 # Шаг 9 и 10 — токен без ошибок буфера (логин + /me + по желанию буфер для MAX)
-$token = (Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=readme-demo@example.com&password=ValidP@ss1").access_token
+$token = (Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=ivanov@email.com&password=ValidP@ss1").access_token
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/me" -Headers @{ Authorization = "Bearer $token" }
 $token | Set-Clipboard   # вставить в MAX после /token 
 ```
@@ -392,13 +441,13 @@ uv run max-poll
 
 ### Шаг 8: регистрация пользователя (`POST /auth/register`)
 
-**Перед запросом:** запущен `auth_service` (шаг 4), порт **8000**. Тело запроса — JSON; минимальная длина пароля и формат email — по правилам API (см. тесты `auth_service`). Ожидается ответ **201** с полями `id`, `email`, `role`, `created_at`. Если email уже занят — **409**, используйте другой `email` в теле.
+**Перед запросом:** запущен `auth_service` (шаг 4), порт **8000**. Тело запроса — JSON; минимальная длина пароля и формат email — по правилам API (см. тесты `auth_service`). Для отчётности удобно использовать email в форме **фамилия@домен** (пример: `ivanov@email.com`). Ожидается ответ **201** с полями `id`, `email`, `role`, `created_at`. Если email уже занят — **409**, используйте другой `email` в теле.
 
 **Windows (PowerShell)** — подставьте каталог клона и при необходимости email/пароль в теле JSON.
 
 ```powershell
 Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
-Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/register" -Method Post -ContentType "application/json" -Body '{"email":"readme-demo@example.com","password":"ValidP@ss1"}'
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/register" -Method Post -ContentType "application/json" -Body '{"email":"ivanov@email.com","password":"ValidP@ss1"}'
 ```
 
 **macOS (Terminal, bash/zsh)**
@@ -407,7 +456,7 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/register" -Method Post -Conte
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
 curl -sS -w "\nHTTP_CODE:%{http_code}\n" -X POST "http://127.0.0.1:8000/auth/register" \
   -H "Content-Type: application/json" \
-  -d '{"email":"readme-demo@example.com","password":"ValidP@ss1"}'
+  -d '{"email":"ivanov@email.com","password":"ValidP@ss1"}'
 ```
 
 **Linux (bash)**
@@ -416,7 +465,7 @@ curl -sS -w "\nHTTP_CODE:%{http_code}\n" -X POST "http://127.0.0.1:8000/auth/reg
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
 curl -sS -w "\nHTTP_CODE:%{http_code}\n" -X POST "http://127.0.0.1:8000/auth/register" \
   -H "Content-Type: application/json" \
-  -d '{"email":"readme-demo@example.com","password":"ValidP@ss1"}'
+  -d '{"email":"ivanov@email.com","password":"ValidP@ss1"}'
 ```
 
 ---
@@ -433,7 +482,7 @@ curl -sS -w "\nHTTP_CODE:%{http_code}\n" -X POST "http://127.0.0.1:8000/auth/reg
 
 ```powershell
 Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
-(Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=readme-demo@example.com&password=ValidP@ss1").access_token | Set-Clipboard
+(Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=ivanov@email.com&password=ValidP@ss1").access_token | Set-Clipboard
 ```
 
 **macOS (Terminal, bash/zsh)** — нужен `python3` (обычно уже есть). Буфер: `pbcopy`.
@@ -442,7 +491,7 @@ Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_av
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
 curl -sS -X POST "http://127.0.0.1:8000/auth/login" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=readme-demo@example.com&password=ValidP@ss1" \
+  -d "username=ivanov@email.com&password=ValidP@ss1" \
 | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'], end='')" \
 | pbcopy
 ```
@@ -453,7 +502,7 @@ curl -sS -X POST "http://127.0.0.1:8000/auth/login" \
 cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
 curl -sS -X POST "http://127.0.0.1:8000/auth/login" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=readme-demo@example.com&password=ValidP@ss1" \
+  -d "username=ivanov@email.com&password=ValidP@ss1" \
 | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'], end='')" \
 | xclip -selection clipboard
 ```
@@ -469,7 +518,7 @@ curl -sS -X POST "http://127.0.0.1:8000/auth/login" \
 **Windows (PowerShell)** — надёжный вариант **без буфера**: сначала логин в переменную, потом запрос (подставьте свой email/пароль).
 
 ```powershell
-$token = (Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=readme-demo@example.com&password=ValidP@ss1").access_token
+$token = (Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=ivanov@email.com&password=ValidP@ss1").access_token
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/me" -Headers @{ Authorization = "Bearer $token" }
 ```
 
@@ -550,6 +599,8 @@ make audit
 ### Чек-лист и отчёты ИБ
 
 Папка [`Разработка/ИБ/`](Разработка/ИБ/): чек-лист, аудиты, отчёт о выполнении задания; опциональный overlay Docker Compose для портов брокеров на localhost — [`docker-compose.dev-host-ports.yml`](Разработка/ИБ/docker-compose.dev-host-ports.yml).
+
+<a id="user-flow-check"></a>
 
 ## Пользовательский flow проверки
 
