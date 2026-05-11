@@ -1,8 +1,16 @@
 """Ключи и имена сущностей Redis, общие для бота и Celery-воркера."""
 
+import hashlib
 import re
 
 OUTBOX_LIST_KEY = "max:outbox"
+
+# Идемпотентность message_created: один mid — одна обработка (защита от повторной доставки апдейта).
+MAX_HANDLED_MID_PREFIX = "max:handled_mid:"
+MAX_HANDLED_MID_TTL_SEC = 86_400
+
+# Дубликаты с разными mid, но тем же текстом и timestamp (две доставки апдейта от MAX).
+MAX_HANDLED_TURN_TTL_SEC = 120
 
 # Максимальная длина пользовательского промпта (защита от Prompt Injection и resource exhaustion)
 MAX_PROMPT_LENGTH = 4000
@@ -55,3 +63,12 @@ def max_auth_key(max_user_id: str) -> str:
 
 def user_chat_key(sub: str) -> str:
     return f"user_chat:{sub}"
+
+
+def handled_mid_redis_key(mid: str) -> str:
+    return f"{MAX_HANDLED_MID_PREFIX}{mid}"
+
+
+def handled_turn_redis_key(max_user_id: str, text: str, timestamp: int) -> str:
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    return f"max:handled_turn:{max_user_id}:{digest}:{timestamp}"

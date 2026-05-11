@@ -10,7 +10,7 @@ from maxapi import Bot
 from app.core.constants import OUTBOX_LIST_KEY
 from app.core.config import settings
 from app.infra.redis import get_redis
-from app.models.outbox import OutboxItem
+from app.models.outbox import OutboxItem, clip_text_for_max_api
 from app.security.redis_integrity import outbox_line_is_valid, seal_outbox_for_redis
 
 log = logging.getLogger(__name__)
@@ -64,7 +64,8 @@ async def outbox_consumer_loop(bot: Bot) -> None:
                 if not is_new:
                     continue
             chat_id = _parse_chat_id(item.max_user_id)
-            await bot.send_message(chat_id=chat_id, text=item.text)
+            text_out = clip_text_for_max_api(item.text)
+            await bot.send_message(chat_id=chat_id, text=text_out)
         except Exception:
             log.exception("Ошибка доставки в MAX: task_id=%s", item.task_id)
             if item.retry_count < settings.outbox_send_max_retries:

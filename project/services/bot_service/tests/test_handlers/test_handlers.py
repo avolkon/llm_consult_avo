@@ -7,6 +7,65 @@ from app.core.constants import is_prompt_suspicious
 
 
 @pytest.mark.asyncio
+async def test_acquire_incoming_message_once_dedupes_mid() -> None:
+    class _R:
+        def __init__(self) -> None:
+            self.keys: dict[str, str] = {}
+
+        async def set(self, key: str, val: str, *, ex: int, nx: bool) -> bool | None:
+            if nx and key in self.keys:
+                return None
+            self.keys[key] = val
+            return True
+
+    from maxapi.enums.chat_type import ChatType
+    from maxapi.types.message import Message, MessageBody, Recipient
+
+    r = _R()
+    body = MessageBody(mid="mid-duplicate-test", seq=1, text="hi")
+    msg = Message(
+        recipient=Recipient(chat_id=1, chat_type=ChatType.DIALOG),
+        timestamp=1,
+        body=body,
+    )
+    assert await handlers.acquire_incoming_message_once(r, msg) is True
+    assert await handlers.acquire_incoming_message_once(r, msg) is False
+
+
+@pytest.mark.asyncio
+async def test_acquire_incoming_message_once_dedupes_same_text_and_ts_distinct_mid() -> None:
+    """Два message_created с разными mid, один и тот же user text и timestamp — одна обработка."""
+    class _R:
+        def __init__(self) -> None:
+            self.keys: dict[str, str] = {}
+
+        async def set(self, key: str, val: str, *, ex: int, nx: bool) -> bool | None:
+            if nx and key in self.keys:
+                return None
+            self.keys[key] = val
+            return True
+
+    from maxapi.enums.chat_type import ChatType
+    from maxapi.types.message import Message, MessageBody, Recipient
+
+    r = _R()
+    rec = Recipient(chat_id=42, chat_type=ChatType.DIALOG)
+    ts = 1_735_000_000
+    m1 = Message(
+        recipient=rec,
+        timestamp=ts,
+        body=MessageBody(mid="mid-first", seq=1, text="привет"),
+    )
+    m2 = Message(
+        recipient=rec,
+        timestamp=ts,
+        body=MessageBody(mid="mid-second", seq=2, text="привет"),
+    )
+    assert await handlers.acquire_incoming_message_once(r, m1) is True
+    assert await handlers.acquire_incoming_message_once(r, m2) is False
+
+
+@pytest.mark.asyncio
 async def test_process_token_command_ok(monkeypatch: pytest.MonkeyPatch) -> None:
     fake_redis = object()
 

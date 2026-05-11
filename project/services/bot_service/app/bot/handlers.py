@@ -6,7 +6,11 @@ from redis.asyncio import Redis
 
 from app.core.config import get_settings
 from app.core.constants import (
+    MAX_HANDLED_MID_TTL_SEC,
+    MAX_HANDLED_TURN_TTL_SEC,
     MAX_PROMPT_LENGTH,
+    handled_mid_redis_key,
+    handled_turn_redis_key,
     is_prompt_suspicious,
 )
 from app.core.jwt import decode_and_validate
@@ -29,6 +33,37 @@ def _max_user_id_from_message(message: Message) -> str:
         msg = "У сообщения нет recipient.chat_id"
         raise ValueError(msg)
     return str(cid)
+
+
+async def acquire_incoming_message_once(redis: Redis, message: Message) -> bool:
+    """Идемпотентность входящих сообщений: mid и (чат + текст + timestamp с API).
+
+    MAX иногда отдаёт два message_created с разными mid при одной реплике пользователя.
+    """
+    text = _message_plain_text(message)
+    try:
+        uid = _max_user_id_from_message(message)
+    except ValueError:
+        uid = ""
+
+    if uid and text:
+        tk = handled_turn_redis_key(uid, text, int(message.timestamp))
+        if not await redis.set(tk, "1", ex=MAX_HANDLED_TURN_TTL_SEC, nx=True):
+            log.debug(
+                "Пропуск дубля (тот же текст, чат и timestamp) uid=%s ts=%s",
+                uid,
+                message.timestamp,
+            )
+            return False
+
+    if message.body is None or not message.body.mid:
+        return True
+
+    mk = handled_mid_redis_key(message.body.mid)
+    if not await redis.set(mk, "1", ex=MAX_HANDLED_MID_TTL_SEC, nx=True):
+        log.debug("Пропуск дубля message_created mid=%s", message.body.mid)
+        return False
+    return True
 
 
 async def process_token_command(redis: Redis, token: str, max_user_id: str) -> str:
@@ -101,6 +136,9 @@ def register_handlers(dp: Dispatcher) -> None:
 
     @dp.message_created(Command("start"))
     async def on_start(event: MessageCreated) -> None:
+        redis = await get_redis()
+        if not await acquire_incoming_message_once(redis, event.message):
+            return
         await event.message.answer(
             "Сервис LLM-консультаций (мессенджер MAX). "
             "Авторизуйтесь: /token <ваш_JWT>."
@@ -116,6 +154,8 @@ def register_handlers(dp: Dispatcher) -> None:
         token = args[0]
         max_user_id = _max_user_id_from_message(event.message)
         redis = await get_redis()
+        if not await acquire_incoming_message_once(redis, event.message):
+            return
         try:
             response = await process_token_command(redis, token, max_user_id)
         except ValueError as exc:
@@ -133,5 +173,7 @@ def register_handlers(dp: Dispatcher) -> None:
 
         max_user_id = _max_user_id_from_message(event.message)
         redis = await get_redis()
+        if not await acquire_incoming_message_once(redis, event.message):
+            return
         response = await process_user_text(redis, text, max_user_id)
         await event.message.answer(response)

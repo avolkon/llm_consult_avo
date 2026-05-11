@@ -1,0 +1,14 @@
+Правила имён для скриншотов чата с ботом в MAX
+============================================
+
+Каталог: screenshots/max_bot/
+
+Шаблон:
+  max_bot_<NN>_<slug>.png
+
+  <NN>   — порядок в сценарии: 01, 02, 03, …
+  <slug> — латиница, snake_case (например: chat_start, token_sent, user_question,
+           bot_reply_pending, bot_reply_done)
+
+Один шаг — несколько кадров: уточняйте slug (_a / _b или _before / _after).
+Расширение только .png.

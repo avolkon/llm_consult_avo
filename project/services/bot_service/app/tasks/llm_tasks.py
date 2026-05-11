@@ -12,7 +12,7 @@ import redis
 from app.core.config import get_settings
 from app.core.constants import OUTBOX_LIST_KEY, user_chat_key
 from app.infra.celery_app import celery_app
-from app.models.outbox import OUTBOX_TEXT_MAX_LEN, OutboxItem
+from app.models.outbox import OutboxItem, clip_text_for_max_api
 from app.security.redis_integrity import seal_outbox_for_redis
 from app.services.openrouter_client import OpenRouterError, call_openrouter_sync
 
@@ -58,8 +58,7 @@ def llm_request(
         log.exception("Unexpected LLM error for sub=%s task_id=%s", sub, task_id)
         response_text = "Внутренняя ошибка при обращении к LLM."
 
-    if len(response_text) > OUTBOX_TEXT_MAX_LEN:
-        response_text = response_text[:OUTBOX_TEXT_MAX_LEN]
+    response_text = clip_text_for_max_api(response_text)
 
     max_user_id = r.get(user_chat_key(sub))
     if not max_user_id:

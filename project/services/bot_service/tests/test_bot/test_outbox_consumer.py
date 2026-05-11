@@ -126,6 +126,34 @@ async def test_outbox_consumer_skips_duplicate_task(
 
 
 @pytest.mark.asyncio
+async def test_outbox_consumer_clips_text_for_max_api_length(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    long = "я" * 5000
+    item = OutboxItem(
+        max_user_id="100",
+        text=long,
+        task_id="task-long",
+        created_at=123.0,
+    )
+    redis = _FakeRedis([("max:outbox", item.to_redis_json()), asyncio.CancelledError()])
+    bot = _FakeBot()
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.setattr(outbox_consumer, "get_redis", fake_get_redis)
+
+    with pytest.raises(asyncio.CancelledError):
+        await outbox_consumer.outbox_consumer_loop(bot)
+
+    assert len(bot.calls) == 1
+    _chat_id, text = bot.calls[0]
+    assert _chat_id == 100
+    assert len(text) < 4000
+
+
+@pytest.mark.asyncio
 async def test_outbox_consumer_skips_invalid_hmac(monkeypatch: pytest.MonkeyPatch) -> None:
     item = OutboxItem(
         max_user_id="100",
