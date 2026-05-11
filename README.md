@@ -176,7 +176,7 @@ llm_consult_avo/
 Подставьте **`ВАШ_ЛОГИН`** (и при необходимости путь). Docker Desktop на Windows должен быть запущен до шага 3. Шаги 4–7 и 8–10 держите в отдельных терминалах, если процесс не завершается сам.
 
 ```powershell
-$R = "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
+$R = "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\llm_consult_avo"
 
 # Шаг 1 — uv
 Set-Location "$R"; Set-Location "project\services\auth_service"; uv sync; Set-Location "..\bot_service"; uv sync; Set-Location "..\..\.."
@@ -219,21 +219,21 @@ $token | Set-Clipboard   # вставить в MAX после /token
 **Windows (PowerShell)** — в первой строке укажите каталог вашего клона (`ВАШ_ЛОГИН` и при необходимости путь).
 
 ```powershell
-Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
+Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\llm_consult_avo"
 Set-Location "project\services\auth_service"; uv sync; Set-Location "..\bot_service"; uv sync; Set-Location "..\..\.."
 ```
 
-**macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените первую строку.
+**macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/llm_consult_avo`, замените первую строку.
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
+cd "$HOME/Documents/GitHub/llm_consult_avo"
 cd project/services/auth_service && uv sync && cd ../bot_service && uv sync && cd ../../..
 ```
 
-**Linux (bash)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените первую строку.
+**Linux (bash)** — если клон не в `~/Documents/GitHub/llm_consult_avo`, замените первую строку.
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
+cd "$HOME/Documents/GitHub/llm_consult_avo"
 cd project/services/auth_service && uv sync && cd ../bot_service && uv sync && cd ../../..
 ```
 
@@ -248,21 +248,21 @@ cd project/services/auth_service && uv sync && cd ../bot_service && uv sync && c
 **Windows (PowerShell)** — в первой строке укажите каталог вашего клона (`ВАШ_ЛОГИН` и при необходимости путь).
 
 ```powershell
-Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
+Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\llm_consult_avo"
 Set-Location "project\services\auth_service"; uv run pytest; Set-Location "..\bot_service"; uv run pytest; Set-Location "..\..\.."
 ```
 
 **macOS (Terminal, bash/zsh)**
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
+cd "$HOME/Documents/GitHub/llm_consult_avo"
 cd project/services/auth_service && uv run pytest && cd ../bot_service && uv run pytest && cd ../../..
 ```
 
 **Linux (bash)**
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
+cd "$HOME/Documents/GitHub/llm_consult_avo"
 cd project/services/auth_service && uv run pytest && cd ../bot_service && uv run pytest && cd ../../..
 ```
 
@@ -279,21 +279,21 @@ cd project/services/auth_service && uv run pytest && cd ../bot_service && uv run
 **Windows (PowerShell)** — в первой строке укажите каталог вашего клона.
 
 ```powershell
-Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
+Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\llm_consult_avo"
 Set-Location "project"; docker compose -f docker-compose.yml -f ../Разработка/ИБ/docker-compose.dev-host-ports.yml up -d redis rabbitmq; Set-Location ".."
 ```
 
 **macOS (Terminal, bash/zsh)**
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
+cd "$HOME/Documents/GitHub/llm_consult_avo"
 cd project && docker compose -f docker-compose.yml -f ../Разработка/ИБ/docker-compose.dev-host-ports.yml up -d redis rabbitmq && cd ..
 ```
 
 **Linux (bash)**
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
+cd "$HOME/Documents/GitHub/llm_consult_avo"
 cd project && docker compose -f docker-compose.yml -f ../Разработка/ИБ/docker-compose.dev-host-ports.yml up -d redis rabbitmq && cd ..
 ```
 
@@ -314,21 +314,21 @@ cd project && docker compose -f docker-compose.yml -f ../Разработка/И
 **Windows (PowerShell)** — в первой строке укажите каталог вашего клона (`ВАШ_ЛОГИН` и при необходимости путь).
 
 ```powershell
-Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo\project\services\auth_service"
+Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\llm_consult_avo\project\services\auth_service"
 uv run auth-service
 ```
 
-**macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените `cd`.
+**macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/llm_consult_avo`, замените `cd`.
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/auth_service"
+cd "$HOME/Documents/GitHub/llm_consult_avo/project/services/auth_service"
 uv run auth-service
 ```
 
-**Linux (bash)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените `cd`.
+**Linux (bash)** — если клон не в `~/Documents/GitHub/llm_consult_avo`, замените `cd`.
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/auth_service"
+cd "$HOME/Documents/GitHub/llm_consult_avo/project/services/auth_service"
 uv run auth-service
 ```
 
@@ -349,21 +349,21 @@ uv run auth-service
 **Windows (PowerShell)** — в первой строке укажите каталог вашего клона (`ВАШ_ЛОГИН` и при необходимости путь).
 
 ```powershell
-Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
+Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\llm_consult_avo"
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/health" -Method Get
 ```
 
-**macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените первую строку.
+**macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/llm_consult_avo`, замените первую строку.
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
+cd "$HOME/Documents/GitHub/llm_consult_avo"
 curl -sS "http://127.0.0.1:8000/health"
 ```
 
-**Linux (bash)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените первую строку.
+**Linux (bash)** — если клон не в `~/Documents/GitHub/llm_consult_avo`, замените первую строку.
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
+cd "$HOME/Documents/GitHub/llm_consult_avo"
 curl -sS "http://127.0.0.1:8000/health"
 ```
 
@@ -382,21 +382,21 @@ curl -sS "http://127.0.0.1:8000/health"
 **Windows (PowerShell)** — в первой строке укажите каталог вашего клона.
 
 ```powershell
-Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo\project\services\bot_service"
+Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\llm_consult_avo\project\services\bot_service"
 uv run celery-llm-worker
 ```
 
-**macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените `cd`.
+**macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/llm_consult_avo`, замените `cd`.
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/bot_service"
+cd "$HOME/Documents/GitHub/llm_consult_avo/project/services/bot_service"
 uv run celery-llm-worker
 ```
 
-**Linux (bash)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените `cd`.
+**Linux (bash)** — если клон не в `~/Documents/GitHub/llm_consult_avo`, замените `cd`.
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/bot_service"
+cd "$HOME/Documents/GitHub/llm_consult_avo/project/services/bot_service"
 uv run celery-llm-worker
 ```
 
@@ -415,21 +415,21 @@ uv run celery-llm-worker
 **Windows (PowerShell)** — в первой строке укажите каталог вашего клона.
 
 ```powershell
-Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo\project\services\bot_service"
+Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\llm_consult_avo\project\services\bot_service"
 uv run max-poll
 ```
 
-**macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените `cd`.
+**macOS (Terminal, bash/zsh)** — если клон не в `~/Documents/GitHub/llm_consult_avo`, замените `cd`.
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/bot_service"
+cd "$HOME/Documents/GitHub/llm_consult_avo/project/services/bot_service"
 uv run max-poll
 ```
 
-**Linux (bash)** — если клон не в `~/Documents/GitHub/pymephi/llm_consult_avo`, замените `cd`.
+**Linux (bash)** — если клон не в `~/Documents/GitHub/llm_consult_avo`, замените `cd`.
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo/project/services/bot_service"
+cd "$HOME/Documents/GitHub/llm_consult_avo/project/services/bot_service"
 uv run max-poll
 ```
 
@@ -446,14 +446,14 @@ uv run max-poll
 **Windows (PowerShell)** — подставьте каталог клона и при необходимости email/пароль в теле JSON.
 
 ```powershell
-Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
+Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\llm_consult_avo"
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/register" -Method Post -ContentType "application/json" -Body '{"email":"ivanov@email.com","password":"ValidP@ss1"}'
 ```
 
 **macOS (Terminal, bash/zsh)**
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
+cd "$HOME/Documents/GitHub/llm_consult_avo"
 curl -sS -w "\nHTTP_CODE:%{http_code}\n" -X POST "http://127.0.0.1:8000/auth/register" \
   -H "Content-Type: application/json" \
   -d '{"email":"ivanov@email.com","password":"ValidP@ss1"}'
@@ -462,7 +462,7 @@ curl -sS -w "\nHTTP_CODE:%{http_code}\n" -X POST "http://127.0.0.1:8000/auth/reg
 **Linux (bash)**
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
+cd "$HOME/Documents/GitHub/llm_consult_avo"
 curl -sS -w "\nHTTP_CODE:%{http_code}\n" -X POST "http://127.0.0.1:8000/auth/register" \
   -H "Content-Type: application/json" \
   -d '{"email":"ivanov@email.com","password":"ValidP@ss1"}'
@@ -481,14 +481,14 @@ curl -sS -w "\nHTTP_CODE:%{http_code}\n" -X POST "http://127.0.0.1:8000/auth/reg
 **Windows (PowerShell)**
 
 ```powershell
-Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\pymephi\llm_consult_avo"
+Set-Location "C:\Users\ВАШ_ЛОГИН\Documents\GitHub\llm_consult_avo"
 (Invoke-RestMethod -Uri "http://127.0.0.1:8000/auth/login" -Method Post -ContentType "application/x-www-form-urlencoded" -Body "username=ivanov@email.com&password=ValidP@ss1").access_token | Set-Clipboard
 ```
 
 **macOS (Terminal, bash/zsh)** — нужен `python3` (обычно уже есть). Буфер: `pbcopy`.
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
+cd "$HOME/Documents/GitHub/llm_consult_avo"
 curl -sS -X POST "http://127.0.0.1:8000/auth/login" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "username=ivanov@email.com&password=ValidP@ss1" \
@@ -499,7 +499,7 @@ curl -sS -X POST "http://127.0.0.1:8000/auth/login" \
 **Linux (bash)** — нужны `curl` и `python3`; в буфер X11: `xclip` (пакет `xclip`). На Wayland без XWayland последнюю часть замените на `| wl-copy` (пакет `wl-clipboard`).
 
 ```bash
-cd "$HOME/Documents/GitHub/pymephi/llm_consult_avo"
+cd "$HOME/Documents/GitHub/llm_consult_avo"
 curl -sS -X POST "http://127.0.0.1:8000/auth/login" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "username=ivanov@email.com&password=ValidP@ss1" \
